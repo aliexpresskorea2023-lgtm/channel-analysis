@@ -94,6 +94,12 @@
   .err { color:var(--error); }
 
   .legal { max-width:1200px; margin:0 auto; padding:24px; color:var(--muted); font-size:13px; border-top:1px solid var(--hairline-soft); }
+
+  /* 업데이트 알림 배너 (로컬 커밋이 원격보다 뒤처질 때만 노출) */
+  .updatebar { background:#fff1f2; border-bottom:1px solid var(--hairline); }
+  .updatebar .inner { max-width:1200px; margin:0 auto; padding:10px 24px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--ink); flex-wrap:wrap; }
+  .updatebar code { font-family:var(--mono); font-size:13px; background:var(--surface-strong); border-radius:6px; padding:2px 8px; white-space:nowrap; }
+  .updatebar .copybtn { margin-left:auto; }
 </style>
 </head>
 <body>
@@ -103,6 +109,13 @@
       <span class="nav-note">유튜브 평균 조회수 · 로컬 전용</span>
     </div>
   </header>
+
+  <div id="updatebar" class="updatebar" hidden>
+    <div class="inner">
+      <span id="updateMsg"></span>
+      <button class="copybtn" id="updateClose">닫기</button>
+    </div>
+  </div>
 
   <main class="container">
     <h1>유튜브 채널 평균 조회수</h1>
@@ -139,7 +152,7 @@
     <div id="analyzeOut"></div>
   </main>
 
-  <footer class="legal">개인·로컬 사용 용도 · YouTube Data API v3 · 키는 이 브라우저 또는 서버 환경변수에만 저장됩니다.</footer>
+  <footer class="legal">개인·로컬 사용 용도 · YouTube Data API v3 · 키는 이 브라우저 또는 서버 환경변수에만 저장됩니다. <span id="buildTag" class="mono"></span></footer>
 
 <script>
 // ── 설정 (필요하면 수정) ────────────────────────────────
@@ -424,11 +437,28 @@ function loadKey() {
   }).catch(()=>{});
 }
 
+// ── 업데이트 알림 (로컬 커밋 vs 원격) ───────────────────
+async function checkUpdate() {
+  try {
+    const r = await fetch("/version");
+    if (!r.ok) return;
+    const v = await r.json();
+    if (v.local) $("buildTag").textContent = `· 로컬 빌드 ${v.local}`;
+    if (!v.behind) return;
+    $("updateMsg").innerHTML =
+      `새 버전이 원격에 있습니다 (<code>${v.local}</code> → <code>${v.remote}</code>). ` +
+      `클론한 폴더의 터미널에서 <code>git pull</code> 후 이 화면을 새로고침하세요.`;
+    $("updatebar").hidden = false;
+    $("updateClose").onclick = () => { $("updatebar").hidden = true; };
+  } catch {} // 구버전 서버(/version 없음)·오프라인이면 조용히 스킵
+}
+
 $("btnConvert").onclick = doConvert;
 $("btnAnalyze").onclick = doAnalyze;
 $("btnCsv").onclick = downloadCsv;
 $("channel").addEventListener("keydown", e => { if (e.key === "Enter") doAnalyze(); });
 loadKey();
+checkUpdate();
 </script>
 </body>
 </html>

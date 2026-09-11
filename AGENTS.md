@@ -8,7 +8,7 @@ AliExpress Korea 유튜브 서브채널·KOL 리서치용으로, 채널의 "일�
 평균 조회수를 비교하는 것이 핵심 사용 사례다. BI 보고에 쓸 수 있도록 근거(영상별 분류)를 남긴다.
 
 ## 2. 구성 (의존성 0, Node 18+ 내장 fetch만 사용)
-- `server.mjs` — `127.0.0.1` 전용 로컬 HTTP 서버. `index.html` 서빙 + YouTube Data API v3 **프록시**(`POST /api/yt`).
+- `server.mjs` — `127.0.0.1` 전용 로컬 HTTP 서버. `index.html` 서빙 + YouTube Data API v3 **프록시**(`POST /api/yt`) + 업데이트 검사(`GET /version`).
 - `index.html` — 단일 파일 웹 화면(흰 배경, 장식 최소화). 채널주소→UC/UU 변환 + 평균 조회수 분석.
 - `cli.mjs` — 동일 로직의 터미널 버전. 다중 채널/배치·CSV·`--selftest` 지원.
 - `README.md` — 사용자 안내(로컬 pull→실행, API 키 발급, 사용법, 쿼터, 문제해결).
@@ -57,6 +57,13 @@ CLI: `node cli.mjs @핸들1 UC... --mode=both --csv=out.csv` / 자가검증: `no
 - 평균 숫자 **옆에 개별 복사 버튼**(쉼표 없는 원본 숫자, 예 `123456`; 배율은 `2.00`). 숫자 카드는 hover 시 섀도 float.
 - 영상별 분류 표: 게시일·조회수·분류(광고=Rausch tint pill / 일반=neutral pill)·길이·제목·광고 근거.
 - CSV 다운로드(BOM 포함, 영상별 원본 데이터).
+- **줄바꿈 방지**: 컨테이너/topnav/legal 최대폭 1200px(양옆 공간 활용). 형식이 고정된 짧은 요소
+  (숫자+복사버튼 쌍, 표의 게시일·조회수·분류·길이 셀)는 `nowrap` + flex 고정(`flex:0 0 auto`)으로 한 줄 유지.
+  늘어나는 건 제목 같은 유연한 칼럼뿐. 천만 단위 숫자에서도 접히지 않음.
+- **업데이트 알림**: 서버 `GET /version` = 로컬 `git rev-parse HEAD` vs `git ls-remote origin refs/heads/main`
+  (5분 캐시, `GIT_TERMINAL_PROMPT=0` → 자격증명 없으면 즉시 실패·스킵). 기계 키체인의 git 자격증명을 쓰므로
+  **비공개 repo에서도 동작**(GitHub API/토 불필요). 뒤처리면 화면 상단 배너("git pull 후 새로고침"),
+  푸터엔 로컬 빌드 해시(문제 리포트 시 버전 특정용). git 저장소 아니면 자동 스킵.
 - 디자인 토큰은 `index.html` 상단 `:root` CSS 변수로 관리 — 색/라운딩 변경은 그곳만 수정.
 
 ## 8. Git / 배포 주의
@@ -67,6 +74,7 @@ CLI: `node cli.mjs @핸들1 UC... --mode=both --csv=out.csv` / 자가검증: `no
 ## 9. 검증
 - `cli.mjs --selftest`: duration 파싱(경계 179s/181s 포함) + 광고 분류(협찬/sponsored/#ad/오탐방지) 13케이스.
 - 서버 기동 시 `/`(HTML), `/config`(hasEnvKey), `/api/yt`(무키 400·허용외 path 400) 확인.
+- `/version`: 로컬=원격이면 `behind:false`. git 저장소 아니면 `local:null`·배너 없음.
 - 한글 퍼센트인코딩 핸들 URL 디코딩 확인(예: `@%EB%B0%9C...` → `@발품파는남자`).
 
 ## 10. 보류 / 다음 작업
