@@ -12,12 +12,12 @@ AliExpress Korea 유튜브 서브채널·KOL 리서치용으로, 채널의 "일�
 - `index.html` — 단일 파일 웹 화면(흰 배경, 장식 최소화). 채널주소→UC/UU 변환 + 평균 조회수 분석.
 - `cli.mjs` — 동일 로직의 터미널 버전. 다중 채널/배치·CSV·`--selftest` 지원.
 - `README.md` — 사용자 안내(로컬 pull→실행, API 키 발급, 사용법, 쿼터, 문제해결).
-- `AGENTS.md`(본 문서) — 운영 규칙, `plan.md` — 기획/의사결정 과정.
+- `AGENTS.md`(본 문서) — 운영 규칙, `plan.md` — 기획/의사결정 과정, `design.md` — Airbnb 디자인 토큰 명세.
 - `.gitignore` — `*.csv`, `.DS_Store`, `node_modules/`, `.env` 제외.
 
 ## 3. 실행
 ```bash
-cd youtube-avg-views
+cd channel-analysis
 node server.mjs                 # → http://127.0.0.1:8787
 PORT=9000 node server.mjs       # 포트 변경
 YOUTUBE_API_KEY=AIza... node server.mjs   # 키를 서버 env로 주입(화면 입력 생략 가능)
@@ -51,15 +51,18 @@ CLI: `node cli.mjs @핸들1 UC... --mode=both --csv=out.csv` / 자가검증: `no
 - 개인용·로컬 전용 전제. 사내/회사 인프라와 분리해 운영한다(개인 클라우드·VPS에 회사 데이터 태우지 않음).
 
 ## 7. UI 약속
-- 흰 배경, 꾸밈 최소화(예쁘게 만들 필요 없음). 숫자는 모노스페이스·우측정렬.
-- 평균 숫자 **옆에 개별 복사 버튼**(쉼표 없는 원본 숫자, 예 `123456`; 배율은 `2.00`).
-- 영상별 분류 표: 게시일·조회수·분류(광고/일반)·길이·제목·광고 근거.
+- 디자인 시스템 = `design.md`(Airbnb 토큰). 흰 캔버스 + Rausch(#ff385c) 단일 악센트, ink(#222) 텍스트,
+  소프트 라운딩(버튼 8px·카드 14px·pill full), hairline(#ddd) 보더, 단일 섀도 티어, Cereal→Inter→system 폰트 스택.
+  primary CTA(분석)만 Rausch, 나머지(변환/CSV)는 white+ink outline secondary.
+- 평균 숫자 **옆에 개별 복사 버튼**(쉼표 없는 원본 숫자, 예 `123456`; 배율은 `2.00`). 숫자 카드는 hover 시 섀도 float.
+- 영상별 분류 표: 게시일·조회수·분류(광고=Rausch tint pill / 일반=neutral pill)·길이·제목·광고 근거.
 - CSV 다운로드(BOM 포함, 영상별 원본 데이터).
+- 디자인 토큰은 `index.html` 상단 `:root` CSS 변수로 관리 — 색/라운딩 변경은 그곳만 수정.
 
 ## 8. Git / 배포 주의
 - Mac 사내 보안 에이전트(AliEntSafe/CloudShell/AliLang)가 HTTPS `git push`를 **출력 없이 exit 128**로 막을 수 있다.
   진단: exit 128 + 무출력 + `git fetch`는 성공 = 보안 에이전트(인증/네트워크 아님). 재시도 loop 금지, 예외 요청 후 동일 push 재시도.
-- 원격 저장소 URL은 사용자 제공 대기 중. `git remote add origin <URL>` → `git push -u origin main`.
+- 원격 저장소: `https://github.com/aliexpresskorea2023-lgtm/channel-analysis.git` (브랜치 `main`).
 
 ## 9. 검증
 - `cli.mjs --selftest`: duration 파싱(경계 179s/181s 포함) + 광고 분류(협찬/sponsored/#ad/오탐방지) 13케이스.
@@ -67,5 +70,6 @@ CLI: `node cli.mjs @핸들1 UC... --mode=both --csv=out.csv` / 자가검증: `no
 - 한글 퍼센트인코딩 핸들 URL 디코딩 확인(예: `@%EB%B0%9C...` → `@발품파는남자`).
 
 ## 10. 보류 / 다음 작업
-- `design.md` 반영해 `index.html` 디자인 최신화 후 커밋·push (파일 제공 대기).
+- `design.md`(Airbnb) 반영 완료 → `index.html` 스타일 최신화됨.
 - (제안, 미확정) 한 화면에 채널 다중 입력 + 누적 유닛 사용량 표시.
+- (미확정) Cereal/Inter 웹폰트 실제 로드(현재는 시스템 폴백) — 오프라인·무의존성 정책과 트레이드오프.

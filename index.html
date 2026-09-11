@@ -5,68 +5,139 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>유튜브 채널 평균 조회수 (로컬)</title>
 <style>
-  :root { --line:#ccc; --mut:#666; }
-  * { box-sizing: border-box; }
-  body { background:#fff; color:#111; font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; margin:0; padding:24px; font-size:14px; line-height:1.5; }
-  h1 { font-size:18px; margin:0 0 4px; }
-  h2 { font-size:15px; margin:24px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
-  .sub { color:var(--mut); margin:0 0 16px; font-size:12px; }
-  .box { border:1px solid var(--line); padding:12px 14px; margin-bottom:16px; }
-  label { display:inline-block; min-width:78px; color:#333; }
-  input[type=text], input[type=password], select { font:inherit; padding:5px 8px; border:1px solid var(--line); background:#fff; min-width:340px; }
-  button { font:inherit; padding:6px 14px; border:1px solid #999; background:#f5f5f5; cursor:pointer; margin-right:6px; }
-  button:hover { background:#eaeaea; }
-  button:disabled { opacity:.5; cursor:default; }
-  .row { margin-bottom:8px; }
-  .mut { color:var(--mut); }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  .num { font-family: ui-monospace, Menlo, Consolas, monospace; text-align:right; }
-  table { border-collapse:collapse; width:100%; margin-top:6px; font-size:13px; }
-  th,td { border:1px solid var(--line); padding:4px 8px; text-align:left; vertical-align:top; }
-  th { background:#f0f0f0; }
-  .cards { display:flex; gap:12px; flex-wrap:wrap; margin:8px 0 4px; }
-  .card { border:1px solid var(--line); padding:10px 14px; min-width:180px; }
-  .card .k { color:var(--mut); font-size:12px; }
-  .card .v { font-size:22px; font-family: ui-monospace, Menlo, monospace; }
-  .tag-ad { background:#ffe9e9; color:#a00; padding:0 6px; border-radius:3px; }
-  .tag-norm { background:#e9f2ff; color:#06a; padding:0 6px; border-radius:3px; }
-  #log { white-space:pre-wrap; color:var(--mut); font-size:12px; font-family: ui-monospace, Menlo, monospace; min-height:18px; margin-top:8px; }
-  .err { color:#a00; }
-  .copybtn { padding:2px 8px; font-size:12px; margin-left:6px; }
-  .pill { display:inline-block; background:#f0f0f0; border:1px solid var(--line); padding:1px 8px; border-radius:10px; font-size:12px; }
+  /* ── Airbnb 디자인 토큰 (design.md 반영) ───────────────── */
+  :root{
+    --primary:#ff385c; --primary-active:#e00b41; --primary-disabled:#ffd1da;
+    --ink:#222222; --body:#3f3f3f; --muted:#6a6a6a; --muted-soft:#929292;
+    --hairline:#dddddd; --hairline-soft:#ebebeb; --border-strong:#c1c1c1;
+    --canvas:#ffffff; --surface-soft:#f7f7f7; --surface-strong:#f2f2f2;
+    --error:#c13515; --legal-link:#428bff; --on-primary:#ffffff;
+    --r-sm:8px; --r-md:14px; --r-lg:20px; --r-xl:32px; --r-full:9999px;
+    --shadow-card: rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px 0, rgba(0,0,0,0.1) 0 4px 8px 0;
+    --font: 'Airbnb Cereal VF', Circular, Inter, -apple-system, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink); font-family:var(--font); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; }
+
+  /* top nav */
+  .topnav { position:sticky; top:0; z-index:10; height:80px; background:var(--canvas); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
+  .topnav .inner { width:100%; max-width:1080px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:12px; }
+  .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; color:var(--primary); letter-spacing:-0.2px; }
+  .brand .orb { width:30px; height:30px; border-radius:var(--r-full); background:var(--primary); display:inline-block; }
+  .nav-note { margin-left:auto; color:var(--muted); font-size:13px; }
+
+  .container { max-width:1080px; margin:0 auto; padding:32px 24px 64px; }
+
+  h1 { font-size:28px; font-weight:700; line-height:1.2; margin:0 0 8px; color:var(--ink); letter-spacing:-0.4px; }
+  h2 { font-size:21px; font-weight:700; line-height:1.3; margin:32px 0 16px; color:var(--ink); }
+  .sub { color:var(--muted); font-size:14px; margin:0 0 24px; }
+
+  /* surface card (구 .box) */
+  .box { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-md); padding:24px; margin-bottom:16px; }
+
+  .row { margin-bottom:16px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+  .row:last-child { margin-bottom:0; }
+  label { display:inline-block; min-width:88px; color:var(--muted); font-size:14px; font-weight:500; }
+
+  input[type=text], input[type=password], select {
+    font-family:var(--font); font-size:16px; color:var(--ink);
+    padding:0 14px; height:48px; border:1px solid var(--hairline); border-radius:var(--r-sm); background:var(--canvas);
+    min-width:340px; outline:none; transition:border-color .15s;
+  }
+  input::placeholder { color:var(--muted-soft); }
+  input[type=text]:focus, input[type=password]:focus, select:focus { border:2px solid var(--ink); padding:0 13px; }
+  input[type=checkbox] { width:auto; height:auto; min-width:0; accent-color:var(--primary); }
+
+  /* buttons */
+  button { font-family:var(--font); cursor:pointer; border:none; background:none; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; height:48px; padding:0 24px; border-radius:var(--r-sm); font-size:16px; font-weight:500; transition:background .15s; }
+  .btn-primary { background:var(--primary); color:var(--on-primary); }
+  .btn-primary:hover { background:var(--primary-active); }
+  .btn-secondary { background:var(--canvas); color:var(--ink); border:1px solid var(--ink); }
+  .btn-secondary:hover { background:var(--surface-soft); }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn-primary:disabled { background:var(--primary-disabled); }
+
+  /* 작은 pill 복사 버튼 */
+  .copybtn { height:28px; padding:0 12px; margin-left:8px; border-radius:var(--r-full); background:var(--surface-strong); color:var(--ink); font-size:13px; font-weight:500; }
+  .copybtn:hover { background:var(--hairline); }
+
+  .mut { color:var(--muted); }
+  .mono { font-family:var(--mono); font-size:14px; }
+  .num { font-family:var(--mono); text-align:right; }
+
+  /* stat cards */
+  .cards { display:flex; gap:16px; flex-wrap:wrap; margin:16px 0 4px; }
+  .card { flex:1 1 180px; min-width:180px; background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-md); padding:20px 24px; transition:box-shadow .2s; }
+  .card:hover { box-shadow:var(--shadow-card); }
+  .card .k { color:var(--muted); font-size:13px; font-weight:500; margin-bottom:6px; display:flex; align-items:center; }
+  .card .v { font-size:28px; font-weight:700; color:var(--ink); letter-spacing:-0.4px; display:flex; align-items:center; flex-wrap:wrap; }
+
+  .pill { display:inline-block; background:var(--surface-soft); border:1px solid var(--hairline); color:var(--body); padding:4px 12px; border-radius:var(--r-full); font-size:13px; font-weight:500; margin-left:6px; }
+
+  .tag-ad, .tag-norm { display:inline-block; padding:3px 12px; border-radius:var(--r-full); font-size:12px; font-weight:600; }
+  .tag-ad { background:rgba(255,56,92,.10); color:var(--primary-active); }
+  .tag-norm { background:var(--surface-strong); color:var(--muted); }
+
+  /* table */
+  table { border-collapse:separate; border-spacing:0; width:100%; margin-top:8px; font-size:14px; border:1px solid var(--hairline); border-radius:var(--r-md); overflow:hidden; }
+  th, td { padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--hairline-soft); }
+  th { background:var(--surface-soft); color:var(--ink); font-size:14px; font-weight:600; border-bottom:1px solid var(--hairline); }
+  tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:var(--surface-soft); }
+
+  #log { white-space:pre-wrap; color:var(--muted); font-size:13px; font-family:var(--mono); min-height:18px; margin-top:12px; }
+  .err { color:var(--error); }
+
+  .legal { max-width:1080px; margin:0 auto; padding:24px; color:var(--muted); font-size:13px; border-top:1px solid var(--hairline-soft); }
 </style>
 </head>
 <body>
-  <h1>유튜브 채널 평균 조회수 · 로컬 도구</h1>
-  <p class="sub">롱폼(3분 초과)만 · 최근 10개 / 최근 3개월 · 일반 vs 광고(협찬) 평균 비교. 모든 호출은 로컬 서버가 프록시하며 외부로 나가지 않습니다.</p>
+  <header class="topnav">
+    <div class="inner">
+      <span class="brand"><span class="orb"></span>채널 분석</span>
+      <span class="nav-note">유튜브 평균 조회수 · 로컬 전용</span>
+    </div>
+  </header>
 
-  <div class="box">
-    <div class="row">
-      <label for="key">API 키</label>
-      <input type="password" id="key" placeholder="AIza... (YouTube Data API v3)" autocomplete="off" />
-      <label style="min-width:auto"><input type="checkbox" id="remember" checked /> 이 브라우저에 저장</label>
-      <span id="keyStatus" class="mut"></span>
-    </div>
-    <div class="row">
-      <label for="channel">채널 주소</label>
-      <input type="text" id="channel" placeholder="https://www.youtube.com/@핸들  또는  UC...  또는  @핸들" />
-    </div>
-    <div class="row">
-      <label for="mode">기준</label>
-      <select id="mode">
-        <option value="both" selected>둘 다 (최근 10개 + 최근 3개월)</option>
-        <option value="10">최근 10개 롱폼만</option>
-        <option value="3m">최근 3개월 롱폼만</option>
-      </select>
-      <button id="btnConvert">UC / UU 변환</button>
-      <button id="btnAnalyze">평균 조회수 분석</button>
-      <button id="btnCsv" disabled>CSV 다운로드</button>
-    </div>
-    <div id="log"></div>
-  </div>
+  <main class="container">
+    <h1>유튜브 채널 평균 조회수</h1>
+    <p class="sub">롱폼(3분 초과)만 · 최근 10개 / 최근 3개월 · 일반 vs 광고(협찬) 평균 비교. 모든 호출은 로컬 서버가 프록시하며 외부로 나가지 않습니다.</p>
 
-  <div id="convertOut"></div>
-  <div id="analyzeOut"></div>
+    <div class="box">
+      <div class="row">
+        <label for="key">API 키</label>
+        <input type="password" id="key" placeholder="AIza... (YouTube Data API v3)" autocomplete="off" />
+        <label style="min-width:auto; display:inline-flex; align-items:center; gap:6px; color:var(--muted)"><input type="checkbox" id="remember" checked /> 이 브라우저에 저장</label>
+        <span id="keyStatus" class="mut"></span>
+      </div>
+      <div class="row">
+        <label for="channel">채널 주소</label>
+        <input type="text" id="channel" placeholder="https://www.youtube.com/@핸들  또는  UC...  또는  @핸들" />
+      </div>
+      <div class="row">
+        <label for="mode">기준</label>
+        <select id="mode">
+          <option value="both" selected>둘 다 (최근 10개 + 최근 3개월)</option>
+          <option value="10">최근 10개 롱폼만</option>
+          <option value="3m">최근 3개월 롱폼만</option>
+        </select>
+      </div>
+      <div class="row">
+        <button id="btnAnalyze" class="btn btn-primary">평균 조회수 분석</button>
+        <button id="btnConvert" class="btn btn-secondary">UC / UU 변환</button>
+        <button id="btnCsv" class="btn btn-secondary" disabled>CSV 다운로드</button>
+      </div>
+      <div id="log"></div>
+    </div>
+
+    <div id="convertOut"></div>
+    <div id="analyzeOut"></div>
+  </main>
+
+  <footer class="legal">개인·로컬 사용 용도 · YouTube Data API v3 · 키는 이 브라우저 또는 서버 환경변수에만 저장됩니다.</footer>
 
 <script>
 // ── 설정 (필요하면 수정) ────────────────────────────────

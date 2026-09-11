@@ -24,15 +24,15 @@
 ### 2-1. 저장소 클론
 ```bash
 # HTTPS
-git clone <REPO_URL>            # 예: https://github.com/USERNAME/youtube-avg-views.git
+git clone https://github.com/aliexpresskorea2023-lgtm/channel-analysis.git
 # 또는 SSH
-git clone <REPO_URL>            # 예: git@github.com:USERNAME/youtube-avg-views.git
+git clone git@github.com:aliexpresskorea2023-lgtm/channel-analysis.git
 
-cd youtube-avg-views
+cd channel-analysis
 ```
 이미 받아둔 저장소를 최신화할 때:
 ```bash
-cd youtube-avg-views
+cd channel-analysis
 git pull origin main
 ```
 
