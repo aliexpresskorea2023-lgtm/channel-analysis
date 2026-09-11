@@ -21,7 +21,7 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = "127.0.0.1"; // 로컬 전용
 const ENV_KEY = process.env.YOUTUBE_API_KEY || "";
 const YT_BASE = "https://www.googleapis.com/youtube/v3";
-const ALLOWED = new Set(["channels", "playlistItems", "videos", "search"]);
+const ALLOWED = new Set(["channels", "playlistItems", "videos", "search", "commentThreads"]);
 
 // ── 업데이트 알림: 로컬 커밋 vs 원격 커밋 ──────────────────────────
 // 기계에 저장된 git 자격증명(키체인 등)을 그대로 쓰므로 비공개 repo에서도 동작. GitHub 토 불필요.

@@ -100,6 +100,28 @@
   .updatebar .inner { max-width:1200px; margin:0 auto; padding:10px 24px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--ink); flex-wrap:wrap; }
   .updatebar code { font-family:var(--mono); font-size:13px; background:var(--surface-strong); border-radius:6px; padding:2px 8px; white-space:nowrap; }
   .updatebar .copybtn { margin-left:auto; }
+
+  /* 제목 링크 */
+  .vlink { color:inherit; text-decoration:none; }
+  .vlink:hover { color:var(--primary-active); text-decoration:underline; }
+
+  /* 영상별 자세히(댓글 분석) 패널 */
+  .detailrow td { background:var(--surface-soft); }
+  .dpanel { padding:16px 12px; display:flex; flex-direction:column; gap:16px; }
+  .dmetrics { display:flex; gap:12px; flex-wrap:wrap; }
+  .dmetrics .card { flex:1 1 150px; min-width:150px; padding:14px 16px; }
+  .dmetrics .card .v { font-size:20px; }
+  .dnote { font-size:12px; color:var(--muted); margin-top:6px; }
+  .brow { display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:13px; }
+  .brow .bname { min-width:96px; font-weight:600; white-space:nowrap; }
+  .brow .bar { flex:1; height:8px; background:var(--surface-strong); border-radius:var(--r-full); overflow:hidden; }
+  .brow .bar i { display:block; height:100%; border-radius:var(--r-full); }
+  .brow .bpct { min-width:120px; text-align:right; font-family:var(--mono); font-size:12px; color:var(--muted); white-space:nowrap; }
+  .bkw { color:var(--muted-soft); font-size:12px; margin:-4px 0 8px 106px; }
+  details.csamples { margin:0 0 10px 106px; font-size:12px; color:var(--muted); }
+  details.csamples summary { cursor:pointer; }
+  details.csamples ul { margin:4px 0 0; padding-left:18px; }
+  details.csamples li { margin:4px 0; }
 </style>
 </head>
 <body>
@@ -240,11 +262,11 @@ async function resolveChannel(raw) {
   const p = parseChannelInput(raw);
   let j;
   if (p.type === "id") {
-    j = await yt("channels", { part: "snippet,contentDetails", id: p.value });
+    j = await yt("channels", { part: "snippet,contentDetails,statistics", id: p.value });
   } else {
     const h = p.value.replace(/^@/, "");
-    j = await yt("channels", { part: "snippet,contentDetails", forHandle: h });
-    if (!j.items || !j.items.length) j = await yt("channels", { part: "snippet,contentDetails", forHandle: "@" + h });
+    j = await yt("channels", { part: "snippet,contentDetails,statistics", forHandle: h });
+    if (!j.items || !j.items.length) j = await yt("channels", { part: "snippet,contentDetails,statistics", forHandle: "@" + h });
   }
   if (!j.items || !j.items.length) throw new Error(`채널을 찾을 수 없습니다: ${raw}`);
   const ch = j.items[0];
@@ -262,7 +284,10 @@ async function fetchVideoDetails(ids) {
       out.set(v.id, {
         id: v.id, title: v.snippet?.title || "", publishedAt: v.snippet?.publishedAt || "",
         durationSec: dur, isShort: dur > 0 && dur <= SHORT_MAX_SECONDS,
-        views: Number(v.statistics?.viewCount || 0), ...classifyAd(v.snippet),
+        views: Number(v.statistics?.viewCount || 0),
+        likes: Number(v.statistics?.likeCount || 0),
+        comments: Number(v.statistics?.commentCount || 0),
+        ...classifyAd(v.snippet),
       });
     }
   }
@@ -318,6 +343,7 @@ function renderConvert(ch, rawInput) {
 }
 
 function renderWindows(ch, windows) {
+  CUR_CH = ch; OPEN_VID = null;
   let html = `<h2>평균 조회수 분석 — ${escapeHtml(ch.title)}</h2>`;
   // 숫자 옆 개별 복사 버튼이 있는 카드
   const statCard = (label, displayVal, copyVal) =>
@@ -345,16 +371,18 @@ function renderWindows(ch, windows) {
   const rows = windows.flatMap(w => w.videos).filter(v => seen.has(v.id) ? false : seen.add(v.id));
   LAST_ROWS = { channelId: ch.id, rows };
   html += `<h2>영상별 분류 <span class="mut" style="font-weight:normal">(광고 판별 근거 확인용 · 총 ${rows.length}개)</span></h2>
-    <table><thead><tr><th>게시일</th><th class="num">조회수</th><th>분류</th><th class="num">길이</th><th>제목</th><th>광고 근거</th></tr></thead><tbody>`;
+    <table><thead><tr><th>게시일</th><th class="num">조회수</th><th>분류</th><th class="num">길이</th><th>제목</th><th>광고 근거</th><th>상세</th></tr></thead><tbody>`;
   for (const v of rows) {
     const cls = v.isAd ? '<span class="tag-ad">광고</span>' : '<span class="tag-norm">일반</span>';
     html += `<tr><td class="mono nw">${v.publishedAt.slice(0,10)}</td><td class="num nw">${nf(v.views)}</td><td class="nw">${cls}</td>
-      <td class="num nw">${fmtDur(v.durationSec)}</td><td>${escapeHtml(v.title)}</td><td class="mut mono">${escapeHtml(v.matched.join(", "))}</td></tr>`;
+      <td class="num nw">${fmtDur(v.durationSec)}</td><td><a class="vlink" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=${v.id}">${escapeHtml(v.title)}</a></td>
+      <td class="mut mono">${escapeHtml(v.matched.join(", "))}</td><td class="nw"><button class="copybtn detailbtn" data-vid="${v.id}">자세히</button></td></tr>`;
   }
   html += `</tbody></table>`;
   $("analyzeOut").innerHTML = html;
   $("btnCsv").disabled = false;
   wireCopyButtons();
+  wireDetailButtons();
 }
 
 function fmtDur(sec){ const m=Math.floor(sec/60), s=sec%60; const h=Math.floor(m/60); return h? `${h}:${String(m%60).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`; }
@@ -381,6 +409,163 @@ function downloadCsv() {
   a.download = `yt-views-${LAST_ROWS.channelId}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// ── 댓글 분석 (영상별 자세히) ───────────────────────────
+const COMMENT_CAP = 500;            // 수집 상한 = 5페이지 = 영상당 최대 5유닛
+const COMMENT_ORDER = "relevance";  // 좋아요순 = 대다수 시청자가 보는 면모
+// 5버킷 · 중복 허용(한 댓글이 여러 버킷에 동시 집계 → 비중 합 100% 초과 가능)
+const COMMENT_BUCKETS = [
+  { id:"product", name:"상품", color:"var(--primary)", pats:[
+    { l:"구매/주문", r:/샀|구매했|주문했|지르|장바구니|담았어|따라\s*사|재구매|구매각/ },
+    { l:"링크/가격", r:/구매\s*링크|링크\s*어디|할인코드|쿠폰|가격|얼마예요|얼마인가요|배송|직구|재입고/ },
+    { l:"평가/욕망", r:/좋아\s*보이|탐나|갖고\s*싶|사고\s*싶|가성비|품질|디자인|색감/ },
+    { l:"성분/사용감", r:/성분|효능|사용감|발림|지속력/ },
+  ] },
+  { id:"person",  name:"인물(크리에이터)", color:"#929292", pats:[
+    { l:"외모/목소리", r:/예뻐|잘생기|귀여워|미모|목소리|말투/ },
+    { l:"팬/응원", r:/팬이에요|팬임|응원|구독\s*눌렀|최애|케미|인성/ },
+  ] },
+  { id:"content", name:"콘텐츠", color:"#c1c1c1", pats:[
+    { l:"편집/자막", r:/편집|자막|BGM|배경음악|영상미/ },
+    { l:"정보/꿀팁", r:/꿀팁|정리\s*잘|설명\s*잘|알차|유익/ },
+  ] },
+  { id:"adrec",   name:"광고 인지", color:"#6a6a6a", pats:[
+    { l:"광고 언급", r:/광고\s*(티|인\s*걸|인건|같|네|임)/ },
+    { l:"협찬/PPL", r:/협찬|돈\s*받|홍보|ppl/i },
+  ] },
+];
+let CUR_CH = null, OPEN_VID = null;
+const COMMENT_CACHE = new Map(); // videoId → { total, texts } (세션 캐시 → 재전개 시 재수집 없음)
+const CUSTOM_KW = new Map();     // videoId → [키워드] (상품 버킷에 추가)
+
+async function fetchComments(videoId) {
+  const texts = []; let pageToken = "", total = null;
+  while (texts.length < COMMENT_CAP) {
+    const j = await yt("commentThreads", { part:"snippet", videoId, maxResults:100, order:COMMENT_ORDER, ...(pageToken ? { pageToken } : {}) });
+    if (total == null) total = j.pageInfo?.totalResults ?? null;
+    for (const it of j.items || []) {
+      const c = it.snippet?.topLevelComment?.snippet;
+      texts.push(c?.textOriginal || c?.textDisplay || "");
+    }
+    pageToken = j.nextPageToken || "";
+    if (!pageToken) break;
+  }
+  return { total, texts: texts.slice(0, COMMENT_CAP) };
+}
+
+function classifyComments(texts, customKws) {
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const buckets = COMMENT_BUCKETS.map(b => ({
+    ...b, count:0, kws:{}, samples:[],
+    pats: b.id === "product" ? [...b.pats, ...customKws.map(k => ({ l:k, r:new RegExp(esc(k), "i") }))] : b.pats,
+  }));
+  let etc = 0;
+  for (const t of texts) {
+    let hit = false;
+    for (const b of buckets) {
+      for (const p of b.pats) {
+        if (p.r.test(t)) {
+          b.count++; hit = true;
+          b.kws[p.l] = (b.kws[p.l] || 0) + 1;
+          if (b.samples.length < 5) b.samples.push(t.slice(0, 100));
+          break; // 버킷당 1회만 (버킷 간 중복은 허용)
+        }
+      }
+    }
+    if (!hit) etc++;
+  }
+  return { buckets, etc };
+}
+
+const dCard = (k, val, note) =>
+  `<div class="card"><div class="k">${k}</div><div class="v"><span class="nv">${val}</span></div>${note ? `<div class="dnote">${note}</div>` : ""}</div>`;
+
+function detailPanelHtml(vid, v, an, cls, kws) {
+  const n = an.texts.length;
+  const er = v.views ? ((v.likes + v.comments) / v.views * 100) : null;
+  const subs = CUR_CH?.subs ? Number(CUR_CH.subs) : null;
+  let html = `<div class="dmetrics">
+    ${dCard("인터렉션 rate", er == null ? "—" : er.toFixed(2) + "%", `(좋아요 ${nf(v.likes)} + 댓글 ${nf(v.comments)}) ÷ 조회수 ${nf(v.views)}`)}
+    ${dCard("조회수 ÷ 구독자", subs ? (v.views / subs).toFixed(2) + "배" : "—", subs ? `구독자 ${nf(subs)}` : "")}
+    ${dCard("좋아요", nf(v.likes))}
+    ${dCard("댓글", nf(v.comments), an.total != null ? `전체 ${nf(an.total)}개 중 샘플 ${nf(n)}개` : `샘플 ${nf(n)}개`)}
+  </div>`;
+  if (!n) return html + `<div class="dnote">수집된 댓글이 없습니다(댓글 기능 꺼짐 등).</div>`;
+  const barRow = (name, count, color) => {
+    const pct = count / n * 100;
+    return `<div class="brow"><span class="bname">${name}</span><span class="bar"><i style="width:${Math.min(pct, 100).toFixed(1)}%;background:${color}"></i></span><span class="bpct">${count}개 · ${pct.toFixed(1)}%</span></div>`;
+  };
+  html += `<div>` + cls.buckets.map(b => {
+    const topKws = Object.entries(b.kws).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k, c]) => `${k}(${c})`).join(", ");
+    return barRow(b.name, b.count, b.color)
+      + (topKws ? `<div class="bkw">근거: ${escapeHtml(topKws)}</div>` : "")
+      + (b.samples.length ? `<details class="csamples"><summary>샘플 댓글 (${b.samples.length})</summary><ul>${b.samples.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul></details>` : "");
+  }).join("")
+    + barRow("기타", cls.etc, "var(--hairline)")
+    + `</div>`;
+  html += `<div>
+    <div class="row" style="margin:0">
+      <label style="min-width:auto">커스텀 키워드</label>
+      <input type="text" id="ckw-${vid}" placeholder="상품·브랜드명 추가" style="min-width:220px;height:40px" />
+      <button class="copybtn" id="ckwAdd-${vid}" style="height:40px">추가</button>
+      ${kws.map(k => `<span class="pill">${escapeHtml(k)} <button class="kwdel" data-vid="${vid}" data-kw="${escapeHtml(k)}" style="color:var(--muted)">×</button></span>`).join("")}
+    </div>
+    <div class="dnote">중복 허용 — 한 댓글이 여러 버킷에 동시에 집계될 수 있어 비중 합이 100%를 초과할 수 있습니다. 좋아요순 샘플 기준 · 커스텀 키워드는 상품 버킷으로 취급 · 캐시되어 재전개 시 재수집 없음.</div>
+  </div>`;
+  return html;
+}
+
+function renderPanel(vid) {
+  const v = LAST_ROWS.rows.find(r => r.id === vid);
+  const an = COMMENT_CACHE.get(vid);
+  if (!v || !an) return;
+  const kws = CUSTOM_KW.get(vid) || [];
+  const cls = classifyComments(an.texts, kws);
+  const panel = $(`dpanel-${vid}`);
+  if (!panel) return;
+  panel.innerHTML = detailPanelHtml(vid, v, an, cls, kws);
+  $(`ckwAdd-${vid}`).onclick = () => {
+    const k = ($(`ckw-${vid}`).value || "").trim();
+    if (!k) return;
+    const arr = CUSTOM_KW.get(vid) || [];
+    if (!arr.includes(k)) arr.push(k);
+    CUSTOM_KW.set(vid, arr);
+    renderPanel(vid);
+  };
+  document.querySelectorAll(`.kwdel[data-vid="${vid}"]`).forEach(b => b.onclick = () => {
+    CUSTOM_KW.set(vid, (CUSTOM_KW.get(vid) || []).filter(k => k !== b.dataset.kw));
+    renderPanel(vid);
+  });
+}
+
+function wireDetailButtons() {
+  document.querySelectorAll(".detailbtn").forEach(b => b.onclick = () => toggleDetail(b.dataset.vid, b));
+}
+
+async function toggleDetail(vid, btn) {
+  const row = btn.closest("tr");
+  if (OPEN_VID === vid) { row.nextElementSibling?.remove(); OPEN_VID = null; btn.textContent = "자세히"; return; }
+  if (OPEN_VID) { // 단일 아코디언: 기존 전개 자동 접기
+    const prev = document.querySelector(`.detailbtn[data-vid="${OPEN_VID}"]`);
+    if (prev) { prev.textContent = "자세히"; prev.closest("tr")?.nextElementSibling?.remove(); }
+  }
+  OPEN_VID = vid; btn.textContent = "접기";
+  const tr = document.createElement("tr");
+  tr.className = "detailrow";
+  tr.innerHTML = `<td colspan="7"><div class="dpanel" id="dpanel-${vid}"><span class="dnote">댓글 수집 중 …</span></div></td>`;
+  row.parentElement.insertBefore(tr, row.nextSibling);
+  try {
+    if (!COMMENT_CACHE.has(vid)) {
+      const { total, texts } = await fetchComments(vid);
+      COMMENT_CACHE.set(vid, { total, texts });
+      log(`  댓글 수집: ${vid} → 샘플 ${texts.length}개 (전체 ${total ?? "?"}개 중, 좋아요순)`);
+    }
+    renderPanel(vid);
+  } catch (e) {
+    const p = $(`dpanel-${vid}`);
+    if (p) p.innerHTML = `<span class="err">댓글 로드 실패: ${escapeHtml(e.message)}</span>`;
+  }
 }
 
 // ── 액션 ────────────────────────────────────────────────
