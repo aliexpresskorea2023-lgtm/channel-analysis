@@ -23,12 +23,12 @@
 
   /* top nav */
   .topnav { position:sticky; top:0; z-index:10; height:80px; background:var(--canvas); border-bottom:1px solid var(--hairline); display:flex; align-items:center; }
-  .topnav .inner { width:100%; max-width:1080px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:12px; }
+  .topnav .inner { width:100%; max-width:1200px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:12px; }
   .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; color:var(--primary); letter-spacing:-0.2px; }
   .brand .orb { width:30px; height:30px; border-radius:var(--r-full); background:var(--primary); display:inline-block; }
   .nav-note { margin-left:auto; color:var(--muted); font-size:13px; }
 
-  .container { max-width:1080px; margin:0 auto; padding:32px 24px 64px; }
+  .container { max-width:1200px; margin:0 auto; padding:32px 24px 64px; }
 
   h1 { font-size:28px; font-weight:700; line-height:1.2; margin:0 0 8px; color:var(--ink); letter-spacing:-0.4px; }
   h2 { font-size:21px; font-weight:700; line-height:1.3; margin:32px 0 16px; color:var(--ink); }
@@ -61,37 +61,39 @@
   .btn-primary:disabled { background:var(--primary-disabled); }
 
   /* 작은 pill 복사 버튼 */
-  .copybtn { height:28px; padding:0 12px; margin-left:8px; border-radius:var(--r-full); background:var(--surface-strong); color:var(--ink); font-size:13px; font-weight:500; }
+  .copybtn { height:26px; padding:0 10px; margin-left:8px; border-radius:var(--r-full); background:var(--surface-strong); color:var(--ink); font-size:12px; font-weight:500; white-space:nowrap; flex:0 0 auto; }
   .copybtn:hover { background:var(--hairline); }
 
   .mut { color:var(--muted); }
   .mono { font-family:var(--mono); font-size:14px; }
   .num { font-family:var(--mono); text-align:right; }
+  .nw { white-space:nowrap; }
 
   /* stat cards */
-  .cards { display:flex; gap:16px; flex-wrap:wrap; margin:16px 0 4px; }
-  .card { flex:1 1 180px; min-width:180px; background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-md); padding:20px 24px; transition:box-shadow .2s; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin:16px 0 4px; }
+  .card { flex:1 1 170px; min-width:170px; background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-md); padding:18px; transition:box-shadow .2s; }
   .card:hover { box-shadow:var(--shadow-card); }
   .card .k { color:var(--muted); font-size:13px; font-weight:500; margin-bottom:6px; display:flex; align-items:center; }
-  .card .v { font-size:28px; font-weight:700; color:var(--ink); letter-spacing:-0.4px; display:flex; align-items:center; flex-wrap:wrap; }
+  .card .v { font-size:24px; font-weight:700; color:var(--ink); letter-spacing:-0.4px; display:flex; align-items:center; flex-wrap:nowrap; }
+  .card .v .nv { white-space:nowrap; flex:0 0 auto; }
 
   .pill { display:inline-block; background:var(--surface-soft); border:1px solid var(--hairline); color:var(--body); padding:4px 12px; border-radius:var(--r-full); font-size:13px; font-weight:500; margin-left:6px; }
 
-  .tag-ad, .tag-norm { display:inline-block; padding:3px 12px; border-radius:var(--r-full); font-size:12px; font-weight:600; }
+  .tag-ad, .tag-norm { display:inline-block; padding:3px 12px; border-radius:var(--r-full); font-size:12px; font-weight:600; white-space:nowrap; }
   .tag-ad { background:rgba(255,56,92,.10); color:var(--primary-active); }
   .tag-norm { background:var(--surface-strong); color:var(--muted); }
 
   /* table */
   table { border-collapse:separate; border-spacing:0; width:100%; margin-top:8px; font-size:14px; border:1px solid var(--hairline); border-radius:var(--r-md); overflow:hidden; }
-  th, td { padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--hairline-soft); }
-  th { background:var(--surface-soft); color:var(--ink); font-size:14px; font-weight:600; border-bottom:1px solid var(--hairline); }
+  th, td { padding:10px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--hairline-soft); }
+  th { background:var(--surface-soft); color:var(--ink); font-size:14px; font-weight:600; border-bottom:1px solid var(--hairline); white-space:nowrap; }
   tr:last-child td { border-bottom:none; }
   tbody tr:hover { background:var(--surface-soft); }
 
   #log { white-space:pre-wrap; color:var(--muted); font-size:13px; font-family:var(--mono); min-height:18px; margin-top:12px; }
   .err { color:var(--error); }
 
-  .legal { max-width:1080px; margin:0 auto; padding:24px; color:var(--muted); font-size:13px; border-top:1px solid var(--hairline-soft); }
+  .legal { max-width:1200px; margin:0 auto; padding:24px; color:var(--muted); font-size:13px; border-top:1px solid var(--hairline-soft); }
 </style>
 </head>
 <body>
@@ -306,7 +308,7 @@ function renderWindows(ch, windows) {
   let html = `<h2>평균 조회수 분석 — ${escapeHtml(ch.title)}</h2>`;
   // 숫자 옆 개별 복사 버튼이 있는 카드
   const statCard = (label, displayVal, copyVal) =>
-    `<div class="card"><div class="k">${label}</div><div class="v">${displayVal} ` +
+    `<div class="card"><div class="k">${label}</div><div class="v"><span class="nv">${displayVal}</span>` +
     `<button class="copybtn" data-copy="${copyVal == null ? "" : copyVal}">복사</button></div></div>`;
   for (const w of windows) {
     const s = w.stats;
@@ -333,8 +335,8 @@ function renderWindows(ch, windows) {
     <table><thead><tr><th>게시일</th><th class="num">조회수</th><th>분류</th><th class="num">길이</th><th>제목</th><th>광고 근거</th></tr></thead><tbody>`;
   for (const v of rows) {
     const cls = v.isAd ? '<span class="tag-ad">광고</span>' : '<span class="tag-norm">일반</span>';
-    html += `<tr><td class="mono">${v.publishedAt.slice(0,10)}</td><td class="num">${nf(v.views)}</td><td>${cls}</td>
-      <td class="num">${fmtDur(v.durationSec)}</td><td>${escapeHtml(v.title)}</td><td class="mut mono">${escapeHtml(v.matched.join(", "))}</td></tr>`;
+    html += `<tr><td class="mono nw">${v.publishedAt.slice(0,10)}</td><td class="num nw">${nf(v.views)}</td><td class="nw">${cls}</td>
+      <td class="num nw">${fmtDur(v.durationSec)}</td><td>${escapeHtml(v.title)}</td><td class="mut mono">${escapeHtml(v.matched.join(", "))}</td></tr>`;
   }
   html += `</tbody></table>`;
   $("analyzeOut").innerHTML = html;
