@@ -1,0 +1,5 @@
+# 로컬 산출물 / 시스템 파일
+*.csv
+.DS_Store
+node_modules/
+.env

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>유튜브 채널 평균 조회수 (로컬)</title>
+<style>
+  :root { --line:#ccc; --mut:#666; }
+  * { box-sizing: border-box; }
+  body { background:#fff; color:#111; font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; margin:0; padding:24px; font-size:14px; line-height:1.5; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:24px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  .sub { color:var(--mut); margin:0 0 16px; font-size:12px; }
+  .box { border:1px solid var(--line); padding:12px 14px; margin-bottom:16px; }
+  label { display:inline-block; min-width:78px; color:#333; }
+  input[type=text], input[type=password], select { font:inherit; padding:5px 8px; border:1px solid var(--line); background:#fff; min-width:340px; }
+  button { font:inherit; padding:6px 14px; border:1px solid #999; background:#f5f5f5; cursor:pointer; margin-right:6px; }
+  button:hover { background:#eaeaea; }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { margin-bottom:8px; }
+  .mut { color:var(--mut); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .num { font-family: ui-monospace, Menlo, Consolas, monospace; text-align:right; }
+  table { border-collapse:collapse; width:100%; margin-top:6px; font-size:13px; }
+  th,td { border:1px solid var(--line); padding:4px 8px; text-align:left; vertical-align:top; }
+  th { background:#f0f0f0; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin:8px 0 4px; }
+  .card { border:1px solid var(--line); padding:10px 14px; min-width:180px; }
+  .card .k { color:var(--mut); font-size:12px; }
+  .card .v { font-size:22px; font-family: ui-monospace, Menlo, monospace; }
+  .tag-ad { background:#ffe9e9; color:#a00; padding:0 6px; border-radius:3px; }
+  .tag-norm { background:#e9f2ff; color:#06a; padding:0 6px; border-radius:3px; }
+  #log { white-space:pre-wrap; color:var(--mut); font-size:12px; font-family: ui-monospace, Menlo, monospace; min-height:18px; margin-top:8px; }
+  .err { color:#a00; }
+  .copybtn { padding:2px 8px; font-size:12px; margin-left:6px; }
+  .pill { display:inline-block; background:#f0f0f0; border:1px solid var(--line); padding:1px 8px; border-radius:10px; font-size:12px; }
+</style>
+</head>
+<body>
+  <h1>유튜브 채널 평균 조회수 · 로컬 도구</h1>
+  <p class="sub">롱폼(3분 초과)만 · 최근 10개 / 최근 3개월 · 일반 vs 광고(협찬) 평균 비교. 모든 호출은 로컬 서버가 프록시하며 외부로 나가지 않습니다.</p>
+
+  <div class="box">
+    <div class="row">
+      <label for="key">API 키</label>
+      <input type="password" id="key" placeholder="AIza... (YouTube Data API v3)" autocomplete="off" />
+      <label style="min-width:auto"><input type="checkbox" id="remember" checked /> 이 브라우저에 저장</label>
+      <span id="keyStatus" class="mut"></span>
+    </div>
+    <div class="row">
+      <label for="channel">채널 주소</label>
+      <input type="text" id="channel" placeholder="https://www.youtube.com/@핸들  또는  UC...  또는  @핸들" />
+    </div>
+    <div class="row">
+      <label for="mode">기준</label>
+      <select id="mode">
+        <option value="both" selected>둘 다 (최근 10개 + 최근 3개월)</option>
+        <option value="10">최근 10개 롱폼만</option>
+        <option value="3m">최근 3개월 롱폼만</option>
+      </select>
+      <button id="btnConvert">UC / UU 변환</button>
+      <button id="btnAnalyze">평균 조회수 분석</button>
+      <button id="btnCsv" disabled>CSV 다운로드</button>
+    </div>
+    <div id="log"></div>
+  </div>
+
+  <div id="convertOut"></div>
+  <div id="analyzeOut"></div>
+
+<script>
+// ── 설정 (필요하면 수정) ────────────────────────────────
+const SHORT_MAX_SECONDS = 180; // 이 이하(=3분)면 쇼츠 → 제외
+const RECENT_DAYS = 90;        // 최근 3개월 = 90일
+const RECENT_N = 10;           // 최근 10개
+const MAX_PAGES = 20;          // 채널당 최대 페이지(=최대 1000영상) 안전장치
+
+// 광고(협찬/스폰서) 판별 키워드 — 휴리스틱. 오탐/미탐 있으면 여기 수정.
+const AD_PATTERNS = [
+  /광고/, /협찬/, /유료광고/, /유료\s*광고/, /스폰서/, /체험단/, /원고료/,
+  /대가성?/, /제휴\s*광고/, /지원받아/, /제공받아/, /무상제공/, /증정받/,
+  /\bsponsored?\b/i, /\bsponsorship\b/i, /\bbrand\s*deal\b/i,
+  /\bpaid\s+(?:promotion|partnership|ad)\b/i, /\b#?ad\b/i, /\badvertorial\b/i,
+  /\bpromo\s*code\b/i, /includes?\s+paid/i,
+];
+
+// ── 유틸 ────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const nf = (n) => (n == null || isNaN(n) ? "—" : Math.round(n).toLocaleString("ko-KR"));
+function log(msg, isErr) {
+  const el = $("log");
+  const line = document.createElement("div");
+  if (isErr) line.className = "err";
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(){ $("log").innerHTML = ""; }
+
+function parseDuration(iso) {
+  if (!iso) return 0;
+  const m = String(iso).match(/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!m) return 0;
+  const [, d, h, mi, s] = m;
+  return Number(d||0)*86400 + Number(h||0)*3600 + Number(mi||0)*60 + Number(s||0);
+}
+
+function parseChannelInput(raw) {
+  let s = (raw || "").trim();
+  try { s = decodeURIComponent(s); } catch {}
+  let m;
+  if ((m = s.match(/\/channel\/(UC[\w-]{22})/))) return { type: "id", value: m[1] };
+  if (/^UC[\w-]{22}$/.test(s)) return { type: "id", value: s };
+  if ((m = s.match(/\/@([^\/?#]+)/))) return { type: "handle", value: "@" + m[1] };
+  if ((m = s.match(/^@[^\/?#]+/))) return { type: "handle", value: s };
+  if ((m = s.match(/youtube\.com\/([^\/?#]+)/)) && !["channel","watch","playlist","results","c","user"].includes(m[1])) return { type: "handle", value: "@" + m[1] };
+  return { type: "handle", value: s.startsWith("@") ? s : "@" + s };
+}
+
+function classifyAd(snippet) {
+  const title = snippet?.title || "";
+  const desc = snippet?.description || "";
+  const tags = snippet?.tags || [];
+  const matched = [];
+  const test = (text, label) => {
+    for (const re of AD_PATTERNS) if (re.test(text)) matched.push(label + ":" + re.source.replace(/\\b|\\s\*\??/g,"").slice(0,16));
+  };
+  test(title, "title"); test(desc, "desc"); test(tags.join(" "), "tag");
+  return { isAd: matched.length > 0, matched: [...new Set(matched)] };
+}
+
+function summarize(videos) {
+  const ads = videos.filter(v => v.isAd), normal = videos.filter(v => !v.isAd);
+  const avg = a => a.length ? a.reduce((s,v)=>s+v.views,0)/a.length : null;
+  return { n: videos.length, avgAll: avg(videos), nNormal: normal.length, avgNormal: avg(normal), nAd: ads.length, avgAd: avg(ads) };
+}
+
+// ── YouTube 프록시 호출 ─────────────────────────────────
+function getKey() { return ($("key").value || "").trim(); }
+async function yt(path, params) {
+  const res = await fetch("/api/yt", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ path, params, key: getKey() }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || j.error) {
+    const e = j.error || {};
+    throw new Error(`${e.message || ("HTTP " + res.status)}${e.errors?.[0]?.reason ? " [" + e.errors[0].reason + "]" : ""}`);
+  }
+  return j;
+}
+
+async function resolveChannel(raw) {
+  const p = parseChannelInput(raw);
+  let j;
+  if (p.type === "id") {
+    j = await yt("channels", { part: "snippet,contentDetails", id: p.value });
+  } else {
+    const h = p.value.replace(/^@/, "");
+    j = await yt("channels", { part: "snippet,contentDetails", forHandle: h });
+    if (!j.items || !j.items.length) j = await yt("channels", { part: "snippet,contentDetails", forHandle: "@" + h });
+  }
+  if (!j.items || !j.items.length) throw new Error(`채널을 찾을 수 없습니다: ${raw}`);
+  const ch = j.items[0];
+  const uploads = ch.contentDetails?.relatedPlaylists?.uploads || ch.id.replace(/^UC/, "UU");
+  return { id: ch.id, title: ch.snippet?.title || ch.id, uploads, subs: ch.statistics?.subscriberCount };
+}
+
+async function fetchVideoDetails(ids) {
+  const out = new Map();
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50);
+    const j = await yt("videos", { part: "snippet,contentDetails,statistics", id: batch.join(",") });
+    for (const v of j.items || []) {
+      const dur = parseDuration(v.contentDetails?.duration);
+      out.set(v.id, {
+        id: v.id, title: v.snippet?.title || "", publishedAt: v.snippet?.publishedAt || "",
+        durationSec: dur, isShort: dur > 0 && dur <= SHORT_MAX_SECONDS,
+        views: Number(v.statistics?.viewCount || 0), ...classifyAd(v.snippet),
+      });
+    }
+  }
+  return out;
+}
+
+async function collectVideos(uploads, mode) {
+  const cutoff = new Date(Date.now() - RECENT_DAYS * 86400000);
+  const useSince = mode === "3m" ? cutoff : null; // 3m만 오래된 영상 수집 자체를 차단(쿼터 절약)
+  const details = new Map();
+  let pageToken = "", pages = 0, longCount = 0, passedCutoff = false;
+  do {
+    pages++;
+    const j = await yt("playlistItems", { part: "contentDetails", maxResults: 50, playlistId: uploads, ...(pageToken ? { pageToken } : {}) });
+    const batch = [];
+    for (const it of j.items || []) {
+      const vid = it.contentDetails?.videoId, pub = it.contentDetails?.videoPublishedAt;
+      if (!vid) continue;
+      if (pub && new Date(pub) < cutoff) passedCutoff = true;
+      if (useSince && pub && new Date(pub) < useSince) continue;
+      batch.push(vid);
+    }
+    if (batch.length) {
+      const d = await fetchVideoDetails(batch);
+      for (const [k, v] of d) if (!details.has(k)) { details.set(k, v); if (!v.isShort) longCount++; }
+    }
+    log(`  … ${pages}페이지 수집: 영상 ${details.size}개 / 롱폼 ${longCount}개${passedCutoff ? " (90일 경계 지남)" : ""}`);
+    const stop = mode === "10" ? longCount >= RECENT_N
+              : mode === "3m" ? passedCutoff
+              : (passedCutoff && longCount >= RECENT_N);
+    if (stop) break;
+    pageToken = j.nextPageToken || "";
+  } while (pageToken && pages < MAX_PAGES);
+  return [...details.values()].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+}
+
+// ── 렌더 ────────────────────────────────────────────────
+let LAST_ROWS = null; // CSV용
+
+function renderConvert(ch, rawInput) {
+  const parsed = parseChannelInput(rawInput);
+  $("convertOut").innerHTML = `
+    <h2>채널 ID 변환 결과</h2>
+    <div class="box">
+      <div class="row"><label>채널명</label> <b>${escapeHtml(ch.title)}</b></div>
+      <div class="row"><label>입력</label> <span class="mut mono">${escapeHtml(parsed.value)}</span></div>
+      <div class="row"><label>UC (채널ID)</label> <span class="mono">${ch.id}</span><button class="copybtn" data-copy="${ch.id}">복사</button></div>
+      <div class="row"><label>UU (업로드PL)</label> <span class="mono">${ch.uploads}</span><button class="copybtn" data-copy="${ch.uploads}">복사</button>
+        <span class="mut"> ← playlistItems.list 의 playlistId로 사용</span></div>
+      <div class="row"><label>플레이리스트 URL</label> <a class="mono" target="_blank" rel="noopener" href="https://www.youtube.com/playlist?list=${ch.uploads}">https://www.youtube.com/playlist?list=${ch.uploads}</a></div>
+    </div>`;
+  wireCopyButtons();
+}
+
+function renderWindows(ch, windows) {
+  let html = `<h2>평균 조회수 분석 — ${escapeHtml(ch.title)}</h2>`;
+  // 숫자 옆 개별 복사 버튼이 있는 카드
+  const statCard = (label, displayVal, copyVal) =>
+    `<div class="card"><div class="k">${label}</div><div class="v">${displayVal} ` +
+    `<button class="copybtn" data-copy="${copyVal == null ? "" : copyVal}">복사</button></div></div>`;
+  for (const w of windows) {
+    const s = w.stats;
+    const hasRatio = s.nAd && s.nNormal && s.avgNormal;
+    const ratioTxt = hasRatio ? (s.avgAd / s.avgNormal).toFixed(2) + "배" : "—";
+    const ratioCopy = hasRatio ? (s.avgAd / s.avgNormal).toFixed(2) : "";
+    const raw = (v) => (v == null ? "" : String(Math.round(v)));
+    html += `
+      <div class="box">
+        <div><b>${w.label}</b> <span class="pill">분석 영상 ${s.n}개</span> <span class="pill">광고 ${s.nAd}개</span> <span class="pill">일반 ${s.nNormal}개</span></div>
+        <div class="cards">
+          ${statCard("전체 평균", nf(s.avgAll), raw(s.avgAll))}
+          ${statCard("일반 평균", nf(s.avgNormal), raw(s.avgNormal))}
+          ${statCard("광고 평균", nf(s.avgAd), raw(s.avgAd))}
+          ${statCard("광고 ÷ 일반", ratioTxt, ratioCopy)}
+        </div>
+      </div>`;
+  }
+  // 영상별 상세
+  const seen = new Set();
+  const rows = windows.flatMap(w => w.videos).filter(v => seen.has(v.id) ? false : seen.add(v.id));
+  LAST_ROWS = { channelId: ch.id, rows };
+  html += `<h2>영상별 분류 <span class="mut" style="font-weight:normal">(광고 판별 근거 확인용 · 총 ${rows.length}개)</span></h2>
+    <table><thead><tr><th>게시일</th><th class="num">조회수</th><th>분류</th><th class="num">길이</th><th>제목</th><th>광고 근거</th></tr></thead><tbody>`;
+  for (const v of rows) {
+    const cls = v.isAd ? '<span class="tag-ad">광고</span>' : '<span class="tag-norm">일반</span>';
+    html += `<tr><td class="mono">${v.publishedAt.slice(0,10)}</td><td class="num">${nf(v.views)}</td><td>${cls}</td>
+      <td class="num">${fmtDur(v.durationSec)}</td><td>${escapeHtml(v.title)}</td><td class="mut mono">${escapeHtml(v.matched.join(", "))}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  $("analyzeOut").innerHTML = html;
+  $("btnCsv").disabled = false;
+  wireCopyButtons();
+}
+
+function fmtDur(sec){ const m=Math.floor(sec/60), s=sec%60; const h=Math.floor(m/60); return h? `${h}:${String(m%60).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`; }
+function escapeHtml(str){ return String(str??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function wireCopyButtons(){
+  document.querySelectorAll(".copybtn").forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "복사됨✓"; setTimeout(()=>b.textContent="복사",1200); }
+    catch { prompt("직접 복사하세요:", b.dataset.copy); }
+  });
+}
+
+// ── CSV ─────────────────────────────────────────────────
+function downloadCsv() {
+  if (!LAST_ROWS) return;
+  const header = ["channelId","videoId","publishedAt","views","durationSec","class","adKeywords","title"];
+  const lines = [header.join(",")];
+  for (const v of LAST_ROWS.rows) {
+    lines.push([LAST_ROWS.channelId, v.id, v.publishedAt, v.views, v.durationSec, v.isAd?"ad":"normal",
+      `"${v.matched.join(";")}"`, `"${(v.title||"").replace(/"/g,'""')}"`].join(","));
+  }
+  const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `yt-views-${LAST_ROWS.channelId}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── 액션 ────────────────────────────────────────────────
+function requireInputs() {
+  if (!getKey()) { log("API 키를 먼저 입력하세요.", true); $("key").focus(); return false; }
+  if (!$("channel").value.trim()) { log("채널 주소를 입력하세요.", true); $("channel").focus(); return false; }
+  return true;
+}
+function setBusy(busy) { ["btnConvert","btnAnalyze"].forEach(id => $(id).disabled = busy); }
+
+async function doConvert() {
+  if (!requireInputs()) return;
+  clearLog(); setBusy(true); $("convertOut").innerHTML = "";
+  try {
+    log("채널 resolving …");
+    const ch = await resolveChannel($("channel").value);
+    renderConvert(ch, $("channel").value);
+    log(`완료: ${ch.title} → UC=${ch.id} / UU=${ch.uploads}`);
+  } catch (e) { log("오류: " + e.message, true); }
+  finally { setBusy(false); }
+}
+
+async function doAnalyze() {
+  if (!requireInputs()) return;
+  clearLog(); setBusy(true); $("analyzeOut").innerHTML = ""; $("btnCsv").disabled = true; LAST_ROWS = null;
+  const mode = $("mode").value;
+  try {
+    log("채널 resolving …");
+    const ch = await resolveChannel($("channel").value);
+    log(`${ch.title} (${ch.id}) · 업로드PL ${ch.uploads}`);
+    log("영상 수집 중 (최신순) …");
+    const vids = (await collectVideos(ch.uploads, mode)).filter(v => !v.isShort); // 롱폼만
+    const windows = [];
+    if (mode === "10" || mode === "both") windows.push({ label: `최근 ${RECENT_N}개 롱폼`, videos: vids.slice(0, RECENT_N) });
+    if (mode === "3m" || mode === "both") {
+      const cutoff = new Date(Date.now() - RECENT_DAYS*86400000);
+      windows.push({ label: `최근 ${RECENT_DAYS}일(3개월) 롱폼`, videos: vids.filter(v => new Date(v.publishedAt) >= cutoff) });
+    }
+    windows.forEach(w => w.stats = summarize(w.videos));
+    renderWindows(ch, windows);
+    log("분석 완료.");
+  } catch (e) { log("오류: " + e.message, true); }
+  finally { setBusy(false); }
+}
+
+// ── 키 저장/로드 ────────────────────────────────────────
+function saveKey() { try { if ($("remember").checked) localStorage.setItem("yt_key", getKey()); else localStorage.removeItem("yt_key"); } catch {} }
+function loadKey() {
+  try { const k = localStorage.getItem("yt_key"); if (k) $("key").value = k; } catch {}
+  $("key").addEventListener("change", saveKey);
+  $("remember").addEventListener("change", saveKey);
+  fetch("/config").then(r=>r.json()).then(c => {
+    $("keyStatus").textContent = c.hasEnvKey ? "· 서버 환경변수에도 키 있음(화면 비워도 됨)" : "";
+  }).catch(()=>{});
+}
+
+$("btnConvert").onclick = doConvert;
+$("btnAnalyze").onclick = doAnalyze;
+$("btnCsv").onclick = downloadCsv;
+$("channel").addEventListener("keydown", e => { if (e.key === "Enter") doAnalyze(); });
+loadKey();
+</script>
+</body>
+</html>
