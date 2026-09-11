@@ -11,6 +11,8 @@ AliExpress Korea 유튜브 서브채널·KOL 리서치용으로, 채널의 "일�
 - `server.mjs` — `127.0.0.1` 전용 로컬 HTTP 서버. `index.html` 서빙 + YouTube Data API v3 **프록시**(`POST /api/yt`).
 - `index.html` — 단일 파일 웹 화면(흰 배경, 장식 최소화). 채널주소→UC/UU 변환 + 평균 조회수 분석.
 - `cli.mjs` — 동일 로직의 터미널 버전. 다중 채널/배치·CSV·`--selftest` 지원.
+- `README.md` — 사용자 안내(로컬 pull→실행, API 키 발급, 사용법, 쿼터, 문제해결).
+- `AGENTS.md`(본 문서) — 운영 규칙, `plan.md` — 기획/의사결정 과정.
 - `.gitignore` — `*.csv`, `.DS_Store`, `node_modules/`, `.env` 제외.
 
 ## 3. 실행
