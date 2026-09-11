@@ -460,7 +460,7 @@ function classifyComments(texts, customKws) {
     ...b, count:0, kws:{}, samples:[],
     pats: b.id === "product" ? [...b.pats, ...customKws.map(k => ({ l:k, r:new RegExp(esc(k), "i") }))] : b.pats,
   }));
-  let etc = 0;
+  let etc = 0; const etcSamples = [];
   for (const t of texts) {
     let hit = false;
     for (const b of buckets) {
@@ -473,9 +473,9 @@ function classifyComments(texts, customKws) {
         }
       }
     }
-    if (!hit) etc++;
+    if (!hit) { etc++; if (etcSamples.length < 3) etcSamples.push(t.slice(0, 100)); }
   }
-  return { buckets, etc };
+  return { buckets, etc, etcSamples };
 }
 
 const dCard = (k, val, note) =>
@@ -496,13 +496,17 @@ function detailPanelHtml(vid, v, an, cls, kws) {
     const pct = count / n * 100;
     return `<div class="brow"><span class="bname">${name}</span><span class="bar"><i style="width:${Math.min(pct, 100).toFixed(1)}%;background:${color}"></i></span><span class="bpct">${count}개 · ${pct.toFixed(1)}%</span></div>`;
   };
+  const sampleList = (arr) => arr.length
+    ? `<details class="csamples"><summary>샘플 댓글 (${arr.length})</summary><ul>${arr.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul></details>`
+    : "";
   html += `<div>` + cls.buckets.map(b => {
     const topKws = Object.entries(b.kws).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k, c]) => `${k}(${c})`).join(", ");
     return barRow(b.name, b.count, b.color)
       + (topKws ? `<div class="bkw">근거: ${escapeHtml(topKws)}</div>` : "")
-      + (b.samples.length ? `<details class="csamples"><summary>샘플 댓글 (${b.samples.length})</summary><ul>${b.samples.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul></details>` : "");
+      + sampleList(b.samples);
   }).join("")
     + barRow("기타", cls.etc, "var(--hairline)")
+    + sampleList(cls.etcSamples || [])
     + `</div>`;
   html += `<div>
     <div class="row" style="margin:0">
