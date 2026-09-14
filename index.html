@@ -27,6 +27,7 @@
   .brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700; color:var(--primary); letter-spacing:-0.2px; }
   .brand .orb { width:30px; height:30px; border-radius:var(--r-full); background:var(--primary); display:inline-block; }
   .nav-note { margin-left:auto; color:var(--muted); font-size:13px; }
+  .langsel { height:40px; min-width:auto; padding:0 10px; font-size:14px; border-radius:var(--r-sm); cursor:pointer; }
 
   .container { max-width:1200px; margin:0 auto; padding:32px 24px 64px; }
 
@@ -127,45 +128,50 @@
 <body>
   <header class="topnav">
     <div class="inner">
-      <span class="brand"><span class="orb"></span>채널 분석</span>
-      <span class="nav-note">유튜브 평균 조회수 · 로컬 전용</span>
+      <span class="brand"><span class="orb"></span><span data-i18n="brand">채널 분석</span></span>
+      <span class="nav-note" data-i18n="nav.note">유튜브 평균 조회수 · 로컬 전용</span>
+      <select id="langSel" class="langsel" title="Language / 언어 / 语言">
+        <option value="ko">🇰🇷 한국어</option>
+        <option value="zh">🇨🇳 简体中文</option>
+        <option value="en">🇬🇧 English</option>
+      </select>
     </div>
   </header>
 
   <div id="updatebar" class="updatebar" hidden>
     <div class="inner">
       <span id="updateMsg"></span>
-      <button class="copybtn" id="updateClose">닫기</button>
+      <button class="copybtn" id="updateClose" data-i18n="update.close">닫기</button>
     </div>
   </div>
 
   <main class="container">
-    <h1>유튜브 채널 평균 조회수</h1>
-    <p class="sub">롱폼(3분 초과)만 · 최근 10개 / 최근 3개월 · 일반 vs 광고(협찬) 평균 비교. 모든 호출은 로컬 서버가 프록시하며 외부로 나가지 않습니다.</p>
+    <h1 data-i18n="h1">유튜브 채널 평균 조회수</h1>
+    <p class="sub" data-i18n="sub">롱폼(3분 초과)만 · 최근 10개 / 최근 3개월 · 일반 vs 광고(협찬) 평균 비교. 모든 호출은 로컬 서버가 프록시하며 외부로 나가지 않습니다.</p>
 
     <div class="box">
       <div class="row">
-        <label for="key">API 키</label>
+        <label for="key" data-i18n="label.key">API 키</label>
         <input type="password" id="key" placeholder="AIza... (YouTube Data API v3)" autocomplete="off" />
-        <label style="min-width:auto; display:inline-flex; align-items:center; gap:6px; color:var(--muted)"><input type="checkbox" id="remember" checked /> 이 브라우저에 저장</label>
+        <label style="min-width:auto; display:inline-flex; align-items:center; gap:6px; color:var(--muted)"><input type="checkbox" id="remember" checked /> <span data-i18n="key.remember">이 브라우저에 저장</span></label>
         <span id="keyStatus" class="mut"></span>
       </div>
       <div class="row">
-        <label for="channel">채널 주소</label>
-        <input type="text" id="channel" placeholder="https://www.youtube.com/@핸들  또는  UC...  또는  @핸들" />
+        <label for="channel" data-i18n="label.channel">채널 주소</label>
+        <input type="text" id="channel" data-i18n-ph="ph.channel" placeholder="https://www.youtube.com/@핸들  또는  UC...  또는  @핸들" />
       </div>
       <div class="row">
-        <label for="mode">기준</label>
+        <label for="mode" data-i18n="label.mode">기준</label>
         <select id="mode">
-          <option value="both" selected>둘 다 (최근 10개 + 최근 3개월)</option>
-          <option value="10">최근 10개 롱폼만</option>
-          <option value="3m">최근 3개월 롱폼만</option>
+          <option value="both" selected data-i18n="mode.both">둘 다 (최근 10개 + 최근 3개월)</option>
+          <option value="10" data-i18n="mode.10">최근 10개 롱폼만</option>
+          <option value="3m" data-i18n="mode.3m">최근 3개월 롱폼만</option>
         </select>
       </div>
       <div class="row">
-        <button id="btnAnalyze" class="btn btn-primary">평균 조회수 분석</button>
-        <button id="btnConvert" class="btn btn-secondary">UC / UU 변환</button>
-        <button id="btnCsv" class="btn btn-secondary" disabled>CSV 다운로드</button>
+        <button id="btnAnalyze" class="btn btn-primary" data-i18n="btn.analyze">평균 조회수 분석</button>
+        <button id="btnConvert" class="btn btn-secondary" data-i18n="btn.convert">UC / UU 변환</button>
+        <button id="btnCsv" class="btn btn-secondary" disabled data-i18n="btn.csv">CSV 다운로드</button>
       </div>
       <div id="log"></div>
     </div>
@@ -174,7 +180,7 @@
     <div id="analyzeOut"></div>
   </main>
 
-  <footer class="legal">개인·로컬 사용 용도 · YouTube Data API v3 · 키는 이 브라우저 또는 서버 환경변수에만 저장됩니다. <span id="buildTag" class="mono"></span></footer>
+  <footer class="legal"><span data-i18n="footer">개인·로컬 사용 용도 · YouTube Data API v3 · 키는 이 브라우저 또는 서버 환경변수에만 저장됩니다.</span> <span id="buildTag" class="mono"></span></footer>
 
 <script>
 // ── 설정 (필요하면 수정) ────────────────────────────────
@@ -192,9 +198,191 @@ const AD_PATTERNS = [
   /\bpromo\s*code\b/i, /includes?\s+paid/i,
 ];
 
+// ── 다국어 (ko/zh/en) ───────────────────────────────────
+// 표시 문자열은 모두 이곳 사전에서 관리. 기본값=ko, 누락 키도 ko로 폴백.
+// {n} 같은 자리표시자는 t(key, {n:값})으로 치환.
+// 주의: AD_PATTERNS·COMMENT_BUCKETS의 "분류 정규식"은 언어와 무관하게 한/영 그대로 둔다
+//       (분석 대상 채널·댓글이 대부분 한국어이기 때문). 번역되는 것은 "화면 라벨"뿐.
+let LANG = "ko";
+try {
+  const saved = localStorage.getItem("yt_lang");
+  const nav = (navigator.language || "").toLowerCase();
+  LANG = ["ko","zh","en"].includes(saved) ? saved : nav.startsWith("zh") ? "zh" : nav.startsWith("en") ? "en" : "ko";
+} catch {}
+
+const I18N = {
+ko: {
+  "app.title":"유튜브 채널 평균 조회수 (로컬)", "brand":"채널 분석", "nav.note":"유튜브 평균 조회수 · 로컬 전용",
+  "h1":"유튜브 채널 평균 조회수",
+  "sub":"롱폼(3분 초과)만 · 최근 10개 / 최근 3개월 · 일반 vs 광고(협찬) 평균 비교. 모든 호출은 로컬 서버가 프록시하며 외부로 나가지 않습니다.",
+  "label.key":"API 키", "key.remember":"이 브라우저에 저장", "key.envnote":"· 서버 환경변수에도 키 있음(화면 비워도 됨)",
+  "label.channel":"채널 주소", "ph.channel":"https://www.youtube.com/@핸들  또는  UC...  또는  @핸들",
+  "label.mode":"기준", "mode.both":"둘 다 (최근 10개 + 최근 3개월)", "mode.10":"최근 10개 롱폼만", "mode.3m":"최근 3개월 롱폼만",
+  "btn.analyze":"평균 조회수 분석", "btn.convert":"UC / UU 변환", "btn.csv":"CSV 다운로드",
+  "footer":"개인·로컬 사용 용도 · YouTube Data API v3 · 키는 이 브라우저 또는 서버 환경변수에만 저장됩니다.",
+  "footer.build":"· 로컬 빌드 {v}",
+  "update.msg":`새 버전이 원격에 있습니다 (<code>{local}</code> → <code>{remote}</code>). 클론한 폴더의 터미널에서 <code>git pull</code> 후 이 화면을 새로고침하세요.`,
+  "update.close":"닫기",
+  "log.needkey":"API 키를 먼저 입력하세요.", "log.needchannel":"채널 주소를 입력하세요.",
+  "log.resolving":"채널 resolving …", "log.err":"오류: {m}",
+  "log.convertok":"완료: {title} → UC={id} / UU={uu}",
+  "log.channelinfo":"{title} ({id}) · 업로드PL {uu}",
+  "log.collecting":"영상 수집 중 (최신순) …",
+  "log.page":"  … {p}페이지 수집: 영상 {v}개 / 롱폼 {l}개{cut}",
+  "log.pagecut":" (90일 경계 지남)", "log.done":"분석 완료.",
+  "log.comments":"  댓글 수집: {id} → 샘플 {n}개 (전체 {t}개 중, 좋아요순)",
+  "err.nochannel":"채널을 찾을 수 없습니다: {raw}",
+  "win.10":`최근 {n}개 롱폼`, "win.3m":"최근 {d}일(3개월) 롱폼",
+  "convert.title":"채널 ID 변환 결과", "convert.name":"채널명", "convert.input":"입력",
+  "convert.uc":"UC (채널ID)", "convert.uu":"UU (업로드PL)", "convert.uunote":"← playlistItems.list 의 playlistId로 사용", "convert.plurl":"플레이리스트 URL",
+  "copy":"복사", "copied":"복사됨✓",
+  "analyze.title":"평균 조회수 분석 — {title}",
+  "pill.videos":"분석 영상 {n}개", "pill.ads":"광고 {n}개", "pill.normal":"일반 {n}개",
+  "card.all":"전체 평균", "card.normal":"일반 평균", "card.ad":"광고 평균", "card.ratio":"광고 ÷ 일반", "unit.times":"배",
+  "table.title":"영상별 분류", "table.sub":"(광고 판별 근거 확인용 · 총 {n}개)",
+  "th.date":"게시일", "th.views":"조회수", "th.class":"분류", "th.dur":"길이", "th.title":"제목", "th.adkw":"광고 근거", "th.detail":"상세",
+  "tag.ad":"광고", "tag.normal":"일반", "btn.detail":"자세히", "btn.collapse":"접기",
+  "ev.title":"제목", "ev.desc":"설명", "ev.tag":"태그",
+  "d.er":"인터렉션 rate", "d.er.note":"(좋아요 {l} + 댓글 {c}) ÷ 조회수 {v}",
+  "d.vps":"조회수 ÷ 구독자", "d.subs":"구독자 {n}", "d.likes":"좋아요", "d.comments":"댓글",
+  "d.sampleof":"전체 {t}개 중 샘플 {n}개", "d.sample":"샘플 {n}개", "d.nocomments":"수집된 댓글이 없습니다(댓글 기능 꺼짐 등).",
+  "d.samples":"샘플 댓글 ({n})", "d.evidence":"근거: {kw}", "d.loading":"댓글 수집 중 …", "d.fail":"댓글 로드 실패: {m}",
+  "bucket.product":"상품", "bucket.person":"인물(크리에이터)", "bucket.content":"콘텐츠", "bucket.adrec":"광고 인지", "bucket.etc":"기타",
+  "kw.product.buy":"구매/주문", "kw.product.link":"링크/가격", "kw.product.review":"평가/욕망", "kw.product.feel":"성분/사용감",
+  "kw.person.look":"외모/목소리", "kw.person.fan":"팬/응원",
+  "kw.content.edit":"편집/자막", "kw.content.info":"정보/꿀팁",
+  "kw.adrec.ad":"광고 언급", "kw.adrec.sponsor":"협찬/PPL",
+  "ckw.label":"커스텀 키워드", "ckw.ph":"상품·브랜드명 추가", "ckw.add":"추가",
+  "ckw.note":"중복 허용 — 한 댓글이 여러 버킷에 동시에 집계될 수 있어 비중 합이 100%를 초과할 수 있습니다. 좋아요순 샘플 기준 · 커스텀 키워드는 상품 버킷으로 취급 · 캐시되어 재전개 시 재수집 없음.",
+},
+zh: {
+  "app.title":"YouTube 频道平均播放量(本地)", "brand":"频道分析", "nav.note":"YouTube 平均播放量 · 仅限本地",
+  "h1":"YouTube 频道平均播放量",
+  "sub":"仅长视频(超过3分钟) · 最近10个 / 最近3个月 · 普通 vs 广告(赞助)平均对比。所有请求由本地服务器代理,不会外发。",
+  "label.key":"API 密钥", "key.remember":"在此浏览器保存", "key.envnote":"· 服务器环境变量中也有密钥(输入框可留空)",
+  "label.channel":"频道地址", "ph.channel":"https://www.youtube.com/@handle  或  UC...  或  @handle",
+  "label.mode":"统计口径", "mode.both":"两者(最近10个 + 最近3个月)", "mode.10":"仅最近10个长视频", "mode.3m":"仅最近3个月长视频",
+  "btn.analyze":"分析平均播放量", "btn.convert":"UC / UU 转换", "btn.csv":"下载 CSV",
+  "footer":"个人 · 本地用途 · YouTube Data API v3 · 密钥仅保存在此浏览器或服务器环境变量中。",
+  "footer.build":"· 本地构建 {v}",
+  "update.msg":`远程有新版本(<code>{local}</code> → <code>{remote}</code>)。请在克隆目录的终端执行 <code>git pull</code> 后刷新本页面。`,
+  "update.close":"关闭",
+  "log.needkey":"请先输入 API 密钥。", "log.needchannel":"请输入频道地址。",
+  "log.resolving":"正在解析频道 …", "log.err":"错误: {m}",
+  "log.convertok":"完成: {title} → UC={id} / UU={uu}",
+  "log.channelinfo":"{title} ({id}) · 上传播放列表 {uu}",
+  "log.collecting":"正在收集视频(最新优先) …",
+  "log.page":"  … 第{p}页: 视频 {v}个 / 长视频 {l}个{cut}",
+  "log.pagecut":" (已越过90天边界)", "log.done":"分析完成。",
+  "log.comments":"  评论收集: {id} → 样本 {n}条(共 {t}条,按点赞排序)",
+  "err.nochannel":"找不到频道: {raw}",
+  "win.10":"最近 {n} 个长视频", "win.3m":"最近 {d} 天(3个月)长视频",
+  "convert.title":"频道 ID 转换结果", "convert.name":"频道名称", "convert.input":"输入",
+  "convert.uc":"UC (频道ID)", "convert.uu":"UU (上传播放列表)", "convert.uunote":"← 用作 playlistItems.list 的 playlistId", "convert.plurl":"播放列表 URL",
+  "copy":"复制", "copied":"已复制✓",
+  "analyze.title":"平均播放量分析 — {title}",
+  "pill.videos":"分析视频 {n}个", "pill.ads":"广告 {n}个", "pill.normal":"普通 {n}个",
+  "card.all":"总体平均", "card.normal":"普通平均", "card.ad":"广告平均", "card.ratio":"广告 ÷ 普通", "unit.times":"倍",
+  "table.title":"按视频分类", "table.sub":"(用于核对广告判定依据 · 共 {n}个)",
+  "th.date":"发布日期", "th.views":"播放量", "th.class":"分类", "th.dur":"时长", "th.title":"标题", "th.adkw":"广告依据", "th.detail":"详情",
+  "tag.ad":"广告", "tag.normal":"普通", "btn.detail":"详情", "btn.collapse":"收起",
+  "ev.title":"标题", "ev.desc":"简介", "ev.tag":"标签",
+  "d.er":"互动率", "d.er.note":"(点赞 {l} + 评论 {c}) ÷ 播放量 {v}",
+  "d.vps":"播放量 ÷ 订阅数", "d.subs":"订阅数 {n}", "d.likes":"点赞", "d.comments":"评论",
+  "d.sampleof":"共 {t}条中样本 {n}条", "d.sample":"样本 {n}条", "d.nocomments":"未收集到评论(评论功能关闭等)。",
+  "d.samples":"样本评论 ({n})", "d.evidence":"依据: {kw}", "d.loading":"正在收集评论 …", "d.fail":"评论加载失败: {m}",
+  "bucket.product":"商品", "bucket.person":"人物(创作者)", "bucket.content":"内容", "bucket.adrec":"广告认知", "bucket.etc":"其他",
+  "kw.product.buy":"购买/下单", "kw.product.link":"链接/价格", "kw.product.review":"评价/想要", "kw.product.feel":"成分/使用感",
+  "kw.person.look":"外貌/声音", "kw.person.fan":"粉丝/应援",
+  "kw.content.edit":"剪辑/字幕", "kw.content.info":"信息/干货",
+  "kw.adrec.ad":"提及广告", "kw.adrec.sponsor":"赞助/PPL",
+  "ckw.label":"自定义关键词", "ckw.ph":"添加商品 · 品牌名", "ckw.add":"添加",
+  "ckw.note":"允许重复 —— 一条评论可同时计入多个桶,占比合计可能超过 100%。样本按点赞排序 · 自定义关键词计入商品桶 · 已缓存,重新展开不再收集。",
+},
+en: {
+  "app.title":"YouTube Channel Avg Views (Local)", "brand":"Channel Analysis", "nav.note":"YouTube avg views · local only",
+  "h1":"YouTube Channel Average Views",
+  "sub":"Long-form only (over 3 min) · Last 10 videos / last 3 months · Organic vs sponsored (ad) averages. All calls are proxied by the local server and never leave your machine.",
+  "label.key":"API key", "key.remember":"Save in this browser", "key.envnote":"· Key also set in server env (input can stay empty)",
+  "label.channel":"Channel URL", "ph.channel":"https://www.youtube.com/@handle  or  UC...  or  @handle",
+  "label.mode":"Window", "mode.both":"Both (last 10 + last 3 months)", "mode.10":"Last 10 long-form only", "mode.3m":"Last 3 months long-form only",
+  "btn.analyze":"Analyze avg views", "btn.convert":"UC / UU convert", "btn.csv":"Download CSV",
+  "footer":"Personal · local use · YouTube Data API v3 · Keys are stored only in this browser or the server environment.",
+  "footer.build":"· local build {v}",
+  "update.msg":`A newer version exists on the remote (<code>{local}</code> → <code>{remote}</code>). Run <code>git pull</code> in the cloned folder, then refresh this page.`,
+  "update.close":"Close",
+  "log.needkey":"Enter your API key first.", "log.needchannel":"Enter a channel URL.",
+  "log.resolving":"Resolving channel …", "log.err":"Error: {m}",
+  "log.convertok":"Done: {title} → UC={id} / UU={uu}",
+  "log.channelinfo":"{title} ({id}) · uploads PL {uu}",
+  "log.collecting":"Collecting videos (newest first) …",
+  "log.page":"  … page {p}: {v} videos / {l} long-form{cut}",
+  "log.pagecut":" (passed 90-day cutoff)", "log.done":"Analysis complete.",
+  "log.comments":"  Comments: {id} → {n} sampled (of {t} total, by relevance)",
+  "err.nochannel":"Channel not found: {raw}",
+  "win.10":"Last {n} long-form videos", "win.3m":"Last {d} days (3 months) long-form",
+  "convert.title":"Channel ID conversion", "convert.name":"Channel name", "convert.input":"Input",
+  "convert.uc":"UC (channel ID)", "convert.uu":"UU (uploads playlist)", "convert.uunote":"← use as playlistId for playlistItems.list", "convert.plurl":"Playlist URL",
+  "copy":"Copy", "copied":"Copied✓",
+  "analyze.title":"Average views — {title}",
+  "pill.videos":"Analyzed: {n}", "pill.ads":"Ads: {n}", "pill.normal":"Organic: {n}",
+  "card.all":"Overall avg", "card.normal":"Organic avg", "card.ad":"Ad avg", "card.ratio":"Ad ÷ organic", "unit.times":"×",
+  "table.title":"Per-video breakdown", "table.sub":"(for verifying ad detection · {n} total)",
+  "th.date":"Published", "th.views":"Views", "th.class":"Class", "th.dur":"Length", "th.title":"Title", "th.adkw":"Ad evidence", "th.detail":"Detail",
+  "tag.ad":"Ad", "tag.normal":"Organic", "btn.detail":"Details", "btn.collapse":"Collapse",
+  "ev.title":"title", "ev.desc":"desc", "ev.tag":"tag",
+  "d.er":"Interaction rate", "d.er.note":"(likes {l} + comments {c}) ÷ views {v}",
+  "d.vps":"Views ÷ subs", "d.subs":"{n} subscribers", "d.likes":"Likes", "d.comments":"Comments",
+  "d.sampleof":"{n} sampled of {t} total", "d.sample":"{n} sampled", "d.nocomments":"No comments collected (comments disabled, etc.).",
+  "d.samples":"Sample comments ({n})", "d.evidence":"Evidence: {kw}", "d.loading":"Collecting comments …", "d.fail":"Failed to load comments: {m}",
+  "bucket.product":"Product", "bucket.person":"Person (creator)", "bucket.content":"Content", "bucket.adrec":"Ad awareness", "bucket.etc":"Other",
+  "kw.product.buy":"Purchase/order", "kw.product.link":"Link/price", "kw.product.review":"Praise/desire", "kw.product.feel":"Ingredients/feel",
+  "kw.person.look":"Looks/voice", "kw.person.fan":"Fan/support",
+  "kw.content.edit":"Editing/subs", "kw.content.info":"Info/tips",
+  "kw.adrec.ad":"Mentions ad", "kw.adrec.sponsor":"Sponsored/PPL",
+  "ckw.label":"Custom keywords", "ckw.ph":"Add product · brand names", "ckw.add":"Add",
+  "ckw.note":"Duplicates allowed — one comment can count in multiple buckets, so shares may sum over 100%. Sampled by relevance · custom keywords count as Product · cached, no re-fetch on reopen.",
+},
+};
+
+function t(key, params) {
+  let s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.ko[key] ?? key;
+  if (params) for (const [k, v] of Object.entries(params)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+const curLang = () => (typeof LANG === "string" && LANG) || "ko"; // nf 등에서 LANG 초기화 전 방어
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = t("app.title");
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  $("langSel").value = LANG;
+  // 키 상태 문구(서버 env 키 안내) 재적용
+  if (SAVED_CONFIG) $("keyStatus").textContent = SAVED_CONFIG.hasEnvKey ? t("key.envnote") : "";
+  // 업데이트 배너·푸터 빌드 태그 재적용
+  if (LAST_VER) {
+    $("buildTag").textContent = LAST_VER.local ? t("footer.build", { v: LAST_VER.local }) : "";
+    if (LAST_VER.behind) {
+      $("updateMsg").innerHTML = t("update.msg", { local: LAST_VER.local, remote: LAST_VER.remote });
+      $("updatebar").hidden = false;
+    }
+  }
+  // 이미 렌더된 결과도 새 언어로 즉시 재렌더 (데이터는 유지, 쿼터 소모 없음)
+  if (LAST_CONVERT) renderConvert(LAST_CONVERT.ch, LAST_CONVERT.raw);
+  if (LAST_WINDOWS) {
+    const reopen = OPEN_VID;
+    renderWindows(CUR_CH, LAST_WINDOWS); // 내부에서 OPEN_VID=null 처리
+    if (reopen && COMMENT_CACHE.has(reopen)) {
+      const b = document.querySelector(`.detailbtn[data-vid="${reopen}"]`);
+      if (b) toggleDetail(reopen, b); // 캐시 hit → API 호출 없이 패널만 재전개
+    }
+  }
+}
+
 // ── 유틸 ────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
-const nf = (n) => (n == null || isNaN(n) ? "—" : Math.round(n).toLocaleString("ko-KR"));
+const nf = (n) => (n == null || isNaN(n) ? "—" : Math.round(n).toLocaleString(curLang() === "en" ? "en-US" : curLang() === "zh" ? "zh-CN" : "ko-KR"));
 function log(msg, isErr) {
   const el = $("log");
   const line = document.createElement("div");
@@ -233,7 +421,7 @@ function classifyAd(snippet) {
   const test = (text, label) => {
     for (const re of AD_PATTERNS) if (re.test(text)) matched.push(label + ":" + re.source.replace(/\\b|\\s\*\??/g,"").slice(0,16));
   };
-  test(title, "title"); test(desc, "desc"); test(tags.join(" "), "tag");
+  test(title, "ev.title"); test(desc, "ev.desc"); test(tags.join(" "), "ev.tag");
   return { isAd: matched.length > 0, matched: [...new Set(matched)] };
 }
 
@@ -268,7 +456,7 @@ async function resolveChannel(raw) {
     j = await yt("channels", { part: "snippet,contentDetails,statistics", forHandle: h });
     if (!j.items || !j.items.length) j = await yt("channels", { part: "snippet,contentDetails,statistics", forHandle: "@" + h });
   }
-  if (!j.items || !j.items.length) throw new Error(`채널을 찾을 수 없습니다: ${raw}`);
+  if (!j.items || !j.items.length) throw new Error(t("err.nochannel", { raw }));
   const ch = j.items[0];
   const uploads = ch.contentDetails?.relatedPlaylists?.uploads || ch.id.replace(/^UC/, "UU");
   return { id: ch.id, title: ch.snippet?.title || ch.id, uploads, subs: ch.statistics?.subscriberCount };
@@ -314,7 +502,7 @@ async function collectVideos(uploads, mode) {
       const d = await fetchVideoDetails(batch);
       for (const [k, v] of d) if (!details.has(k)) { details.set(k, v); if (!v.isShort) longCount++; }
     }
-    log(`  … ${pages}페이지 수집: 영상 ${details.size}개 / 롱폼 ${longCount}개${passedCutoff ? " (90일 경계 지남)" : ""}`);
+    log(t("log.page", { p: pages, v: details.size, l: longCount, cut: passedCutoff ? t("log.pagecut") : "" }));
     const stop = mode === "10" ? longCount >= RECENT_N
               : mode === "3m" ? passedCutoff
               : (passedCutoff && longCount >= RECENT_N);
@@ -325,44 +513,50 @@ async function collectVideos(uploads, mode) {
 }
 
 // ── 렌더 ────────────────────────────────────────────────
-let LAST_ROWS = null; // CSV용
+let LAST_ROWS = null;    // CSV용
+let LAST_CONVERT = null; // { ch, raw } — 언어 전환 시 변환 결과 재렌더용
+let LAST_WINDOWS = null; // windows — 언어 전환 시 분석 결과 재렌더용
+let LAST_VER = null;     // /version 응답 — 배너·빌드태그 문구 재적용용
+let SAVED_CONFIG = null; // /config 응답 — 키 상태 문구 재적용용
 
 function renderConvert(ch, rawInput) {
+  LAST_CONVERT = { ch, raw: rawInput };
   const parsed = parseChannelInput(rawInput);
   $("convertOut").innerHTML = `
-    <h2>채널 ID 변환 결과</h2>
+    <h2>${t("convert.title")}</h2>
     <div class="box">
-      <div class="row"><label>채널명</label> <b>${escapeHtml(ch.title)}</b></div>
-      <div class="row"><label>입력</label> <span class="mut mono">${escapeHtml(parsed.value)}</span></div>
-      <div class="row"><label>UC (채널ID)</label> <span class="mono">${ch.id}</span><button class="copybtn" data-copy="${ch.id}">복사</button></div>
-      <div class="row"><label>UU (업로드PL)</label> <span class="mono">${ch.uploads}</span><button class="copybtn" data-copy="${ch.uploads}">복사</button>
-        <span class="mut"> ← playlistItems.list 의 playlistId로 사용</span></div>
-      <div class="row"><label>플레이리스트 URL</label> <a class="mono" target="_blank" rel="noopener" href="https://www.youtube.com/playlist?list=${ch.uploads}">https://www.youtube.com/playlist?list=${ch.uploads}</a></div>
+      <div class="row"><label>${t("convert.name")}</label> <b>${escapeHtml(ch.title)}</b></div>
+      <div class="row"><label>${t("convert.input")}</label> <span class="mut mono">${escapeHtml(parsed.value)}</span></div>
+      <div class="row"><label>${t("convert.uc")}</label> <span class="mono">${ch.id}</span><button class="copybtn" data-copy="${ch.id}">${t("copy")}</button></div>
+      <div class="row"><label>${t("convert.uu")}</label> <span class="mono">${ch.uploads}</span><button class="copybtn" data-copy="${ch.uploads}">${t("copy")}</button>
+        <span class="mut"> ${t("convert.uunote")}</span></div>
+      <div class="row"><label>${t("convert.plurl")}</label> <a class="mono" target="_blank" rel="noopener" href="https://www.youtube.com/playlist?list=${ch.uploads}">https://www.youtube.com/playlist?list=${ch.uploads}</a></div>
     </div>`;
   wireCopyButtons();
 }
 
 function renderWindows(ch, windows) {
-  CUR_CH = ch; OPEN_VID = null;
-  let html = `<h2>평균 조회수 분석 — ${escapeHtml(ch.title)}</h2>`;
+  CUR_CH = ch; OPEN_VID = null; LAST_WINDOWS = windows;
+  let html = `<h2>${t("analyze.title", { title: escapeHtml(ch.title) })}</h2>`;
   // 숫자 옆 개별 복사 버튼이 있는 카드
   const statCard = (label, displayVal, copyVal) =>
     `<div class="card"><div class="k">${label}</div><div class="v"><span class="nv">${displayVal}</span>` +
-    `<button class="copybtn" data-copy="${copyVal == null ? "" : copyVal}">복사</button></div></div>`;
+    `<button class="copybtn" data-copy="${copyVal == null ? "" : copyVal}">${t("copy")}</button></div></div>`;
   for (const w of windows) {
     const s = w.stats;
+    const wLabel = w.labelKey ? t(w.labelKey, w.labelParams) : w.label;
     const hasRatio = s.nAd && s.nNormal && s.avgNormal;
-    const ratioTxt = hasRatio ? (s.avgAd / s.avgNormal).toFixed(2) + "배" : "—";
+    const ratioTxt = hasRatio ? (s.avgAd / s.avgNormal).toFixed(2) + t("unit.times") : "—";
     const ratioCopy = hasRatio ? (s.avgAd / s.avgNormal).toFixed(2) : "";
     const raw = (v) => (v == null ? "" : String(Math.round(v)));
     html += `
       <div class="box">
-        <div><b>${w.label}</b> <span class="pill">분석 영상 ${s.n}개</span> <span class="pill">광고 ${s.nAd}개</span> <span class="pill">일반 ${s.nNormal}개</span></div>
+        <div><b>${wLabel}</b> <span class="pill">${t("pill.videos", { n: s.n })}</span> <span class="pill">${t("pill.ads", { n: s.nAd })}</span> <span class="pill">${t("pill.normal", { n: s.nNormal })}</span></div>
         <div class="cards">
-          ${statCard("전체 평균", nf(s.avgAll), raw(s.avgAll))}
-          ${statCard("일반 평균", nf(s.avgNormal), raw(s.avgNormal))}
-          ${statCard("광고 평균", nf(s.avgAd), raw(s.avgAd))}
-          ${statCard("광고 ÷ 일반", ratioTxt, ratioCopy)}
+          ${statCard(t("card.all"), nf(s.avgAll), raw(s.avgAll))}
+          ${statCard(t("card.normal"), nf(s.avgNormal), raw(s.avgNormal))}
+          ${statCard(t("card.ad"), nf(s.avgAd), raw(s.avgAd))}
+          ${statCard(t("card.ratio"), ratioTxt, ratioCopy)}
         </div>
       </div>`;
   }
@@ -370,13 +564,14 @@ function renderWindows(ch, windows) {
   const seen = new Set();
   const rows = windows.flatMap(w => w.videos).filter(v => seen.has(v.id) ? false : seen.add(v.id));
   LAST_ROWS = { channelId: ch.id, rows };
-  html += `<h2>영상별 분류 <span class="mut" style="font-weight:normal">(광고 판별 근거 확인용 · 총 ${rows.length}개)</span></h2>
-    <table><thead><tr><th>게시일</th><th class="num">조회수</th><th>분류</th><th class="num">길이</th><th>제목</th><th>광고 근거</th><th>상세</th></tr></thead><tbody>`;
+  html += `<h2>${t("table.title")} <span class="mut" style="font-weight:normal">${t("table.sub", { n: rows.length })}</span></h2>
+    <table><thead><tr><th>${t("th.date")}</th><th class="num">${t("th.views")}</th><th>${t("th.class")}</th><th class="num">${t("th.dur")}</th><th>${t("th.title")}</th><th>${t("th.adkw")}</th><th>${t("th.detail")}</th></tr></thead><tbody>`;
   for (const v of rows) {
-    const cls = v.isAd ? '<span class="tag-ad">광고</span>' : '<span class="tag-norm">일반</span>';
+    const cls = v.isAd ? `<span class="tag-ad">${t("tag.ad")}</span>` : `<span class="tag-norm">${t("tag.normal")}</span>`;
+    const ev = v.matched.map(m => { const i = m.indexOf(":"); return i > 0 ? t(m.slice(0, i)) + m.slice(i) : m; }).join(", ");
     html += `<tr><td class="mono nw">${v.publishedAt.slice(0,10)}</td><td class="num nw">${nf(v.views)}</td><td class="nw">${cls}</td>
       <td class="num nw">${fmtDur(v.durationSec)}</td><td><a class="vlink" target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=${v.id}">${escapeHtml(v.title)}</a></td>
-      <td class="mut mono">${escapeHtml(v.matched.join(", "))}</td><td class="nw"><button class="copybtn detailbtn" data-vid="${v.id}">자세히</button></td></tr>`;
+      <td class="mut mono">${escapeHtml(ev)}</td><td class="nw"><button class="copybtn detailbtn" data-vid="${v.id}">${t("btn.detail")}</button></td></tr>`;
   }
   html += `</tbody></table>`;
   $("analyzeOut").innerHTML = html;
@@ -388,9 +583,12 @@ function renderWindows(ch, windows) {
 function fmtDur(sec){ const m=Math.floor(sec/60), s=sec%60; const h=Math.floor(m/60); return h? `${h}:${String(m%60).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`; }
 function escapeHtml(str){ return String(str??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function wireCopyButtons(){
-  document.querySelectorAll(".copybtn").forEach(b => b.onclick = async () => {
-    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "복사됨✓"; setTimeout(()=>b.textContent="복사",1200); }
-    catch { prompt("직접 복사하세요:", b.dataset.copy); }
+  document.querySelectorAll(".copybtn").forEach(b => {
+    if (b.classList.contains("detailbtn")) return; // 자세히/접기 버튼은 data-copy 없음 — 제외
+    b.onclick = async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = t("copied"); setTimeout(()=>b.textContent=t("copy"),1200); }
+      catch { prompt(t("copy") + ":", b.dataset.copy); }
+    };
   });
 }
 
@@ -415,24 +613,25 @@ function downloadCsv() {
 const COMMENT_CAP = 500;            // 수집 상한 = 5페이지 = 영상당 최대 5유닛
 const COMMENT_ORDER = "relevance";  // 좋아요순 = 대다수 시청자가 보는 면모
 // 5버킷 · 중복 허용(한 댓글이 여러 버킷에 동시 집계 → 비중 합 100% 초과 가능)
+// nameKey/lKey = UI 언어로 번역되는 "표시 라벨" 키. 정규식(r)은 언어와 무관하게 한/영 고정.
 const COMMENT_BUCKETS = [
-  { id:"product", name:"상품", color:"var(--primary)", pats:[
-    { l:"구매/주문", r:/샀|구매했|주문했|지르|장바구니|담았어|따라\s*사|재구매|구매각/ },
-    { l:"링크/가격", r:/구매\s*링크|링크\s*어디|할인코드|쿠폰|가격|얼마예요|얼마인가요|배송|직구|재입고/ },
-    { l:"평가/욕망", r:/좋아\s*보이|탐나|갖고\s*싶|사고\s*싶|가성비|품질|디자인|색감/ },
-    { l:"성분/사용감", r:/성분|효능|사용감|발림|지속력/ },
+  { id:"product", nameKey:"bucket.product", color:"var(--primary)", pats:[
+    { lKey:"kw.product.buy", r:/샀|구매했|주문했|지르|장바구니|담았어|따라\s*사|재구매|구매각/ },
+    { lKey:"kw.product.link", r:/구매\s*링크|링크\s*어디|할인코드|쿠폰|가격|얼마예요|얼마인가요|배송|직구|재입고/ },
+    { lKey:"kw.product.review", r:/좋아\s*보이|탐나|갖고\s*싶|사고\s*싶|가성비|품질|디자인|색감/ },
+    { lKey:"kw.product.feel", r:/성분|효능|사용감|발림|지속력/ },
   ] },
-  { id:"person",  name:"인물(크리에이터)", color:"#929292", pats:[
-    { l:"외모/목소리", r:/예뻐|잘생기|귀여워|미모|목소리|말투/ },
-    { l:"팬/응원", r:/팬이에요|팬임|응원|구독\s*눌렀|최애|케미|인성/ },
+  { id:"person",  nameKey:"bucket.person", color:"#929292", pats:[
+    { lKey:"kw.person.look", r:/예뻐|잘생기|귀여워|미모|목소리|말투/ },
+    { lKey:"kw.person.fan", r:/팬이에요|팬임|응원|구독\s*눌렀|최애|케미|인성/ },
   ] },
-  { id:"content", name:"콘텐츠", color:"#c1c1c1", pats:[
-    { l:"편집/자막", r:/편집|자막|BGM|배경음악|영상미/ },
-    { l:"정보/꿀팁", r:/꿀팁|정리\s*잘|설명\s*잘|알차|유익/ },
+  { id:"content", nameKey:"bucket.content", color:"#c1c1c1", pats:[
+    { lKey:"kw.content.edit", r:/편집|자막|BGM|배경음악|영상미/ },
+    { lKey:"kw.content.info", r:/꿀팁|정리\s*잘|설명\s*잘|알차|유익/ },
   ] },
-  { id:"adrec",   name:"광고 인지", color:"#6a6a6a", pats:[
-    { l:"광고 언급", r:/광고\s*(티|인\s*걸|인건|같|네|임)/ },
-    { l:"협찬/PPL", r:/협찬|돈\s*받|홍보|ppl/i },
+  { id:"adrec",   nameKey:"bucket.adrec", color:"#6a6a6a", pats:[
+    { lKey:"kw.adrec.ad", r:/광고\s*(티|인\s*걸|인건|같|네|임)/ },
+    { lKey:"kw.adrec.sponsor", r:/협찬|돈\s*받|홍보|ppl/i },
   ] },
 ];
 let CUR_CH = null, OPEN_VID = null;
@@ -467,7 +666,8 @@ function classifyComments(texts, customKws) {
       for (const p of b.pats) {
         if (p.r.test(t)) {
           b.count++; hit = true;
-          b.kws[p.l] = (b.kws[p.l] || 0) + 1;
+          const lk = p.lKey || p.l;
+          b.kws[lk] = (b.kws[lk] || 0) + 1;
           if (b.samples.length < 5) b.samples.push(t.slice(0, 100));
           break; // 버킷당 1회만 (버킷 간 중복은 허용)
         }
@@ -486,36 +686,37 @@ function detailPanelHtml(vid, v, an, cls, kws) {
   const er = v.views ? ((v.likes + v.comments) / v.views * 100) : null;
   const subs = CUR_CH?.subs ? Number(CUR_CH.subs) : null;
   let html = `<div class="dmetrics">
-    ${dCard("인터렉션 rate", er == null ? "—" : er.toFixed(2) + "%", `(좋아요 ${nf(v.likes)} + 댓글 ${nf(v.comments)}) ÷ 조회수 ${nf(v.views)}`)}
-    ${dCard("조회수 ÷ 구독자", subs ? (v.views / subs).toFixed(2) + "배" : "—", subs ? `구독자 ${nf(subs)}` : "")}
-    ${dCard("좋아요", nf(v.likes))}
-    ${dCard("댓글", nf(v.comments), an.total != null ? `전체 ${nf(an.total)}개 중 샘플 ${nf(n)}개` : `샘플 ${nf(n)}개`)}
+    ${dCard(t("d.er"), er == null ? "—" : er.toFixed(2) + "%", t("d.er.note", { l: nf(v.likes), c: nf(v.comments), v: nf(v.views) }))}
+    ${dCard(t("d.vps"), subs ? (v.views / subs).toFixed(2) + t("unit.times") : "—", subs ? t("d.subs", { n: nf(subs) }) : "")}
+    ${dCard(t("d.likes"), nf(v.likes))}
+    ${dCard(t("d.comments"), nf(v.comments), an.total != null ? t("d.sampleof", { t: nf(an.total), n: nf(n) }) : t("d.sample", { n: nf(n) }))}
   </div>`;
-  if (!n) return html + `<div class="dnote">수집된 댓글이 없습니다(댓글 기능 꺼짐 등).</div>`;
+  if (!n) return html + `<div class="dnote">${t("d.nocomments")}</div>`;
   const barRow = (name, count, color) => {
     const pct = count / n * 100;
-    return `<div class="brow"><span class="bname">${name}</span><span class="bar"><i style="width:${Math.min(pct, 100).toFixed(1)}%;background:${color}"></i></span><span class="bpct">${count}개 · ${pct.toFixed(1)}%</span></div>`;
+    return `<div class="brow"><span class="bname">${name}</span><span class="bar"><i style="width:${Math.min(pct, 100).toFixed(1)}%;background:${color}"></i></span><span class="bpct">${count} · ${pct.toFixed(1)}%</span></div>`;
   };
-  const sampleList = (arr) => arr.length
-    ? `<details class="csamples"><summary>샘플 댓글 (${arr.length})</summary><ul>${arr.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul></details>`
+  const sampleList = (arr, sid) => arr.length
+    ? `<details class="csamples" id="${sid}"><summary>${t("d.samples", { n: arr.length })}</summary><ul>${arr.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul></details>`
     : "";
-  html += `<div>` + cls.buckets.map(b => {
-    const topKws = Object.entries(b.kws).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k, c]) => `${k}(${c})`).join(", ");
-    return barRow(b.name, b.count, b.color)
-      + (topKws ? `<div class="bkw">근거: ${escapeHtml(topKws)}</div>` : "")
-      + sampleList(b.samples);
+  html += `<div>` + cls.buckets.map((b, i) => {
+    const topKws = Object.entries(b.kws).sort((x, y) => y[1] - x[1]).slice(0, 3)
+      .map(([k, c]) => `${k.startsWith("kw.") || k.startsWith("bucket.") ? t(k) : k}(${c})`).join(", ");
+    return barRow(t(b.nameKey), b.count, b.color)
+      + (topKws ? `<div class="bkw">${t("d.evidence", { kw: escapeHtml(topKws) })}</div>` : "")
+      + sampleList(b.samples, `cs-${vid}-${i}`);
   }).join("")
-    + barRow("기타", cls.etc, "var(--hairline)")
-    + sampleList(cls.etcSamples || [])
+    + barRow(t("bucket.etc"), cls.etc, "var(--hairline)")
+    + sampleList(cls.etcSamples || [], `cs-${vid}-etc`)
     + `</div>`;
   html += `<div>
     <div class="row" style="margin:0">
-      <label style="min-width:auto">커스텀 키워드</label>
-      <input type="text" id="ckw-${vid}" placeholder="상품·브랜드명 추가" style="min-width:220px;height:40px" />
-      <button class="copybtn" id="ckwAdd-${vid}" style="height:40px">추가</button>
+      <label style="min-width:auto">${t("ckw.label")}</label>
+      <input type="text" id="ckw-${vid}" data-i18n-ph="ckw.ph" placeholder="${t("ckw.ph")}" style="min-width:220px;height:40px" />
+      <button class="copybtn" id="ckwAdd-${vid}" style="height:40px">${t("ckw.add")}</button>
       ${kws.map(k => `<span class="pill">${escapeHtml(k)} <button class="kwdel" data-vid="${vid}" data-kw="${escapeHtml(k)}" style="color:var(--muted)">×</button></span>`).join("")}
     </div>
-    <div class="dnote">중복 허용 — 한 댓글이 여러 버킷에 동시에 집계될 수 있어 비중 합이 100%를 초과할 수 있습니다. 좋아요순 샘플 기준 · 커스텀 키워드는 상품 버킷으로 취급 · 캐시되어 재전개 시 재수집 없음.</div>
+    <div class="dnote">${t("ckw.note")}</div>
   </div>`;
   return html;
 }
@@ -528,7 +729,13 @@ function renderPanel(vid) {
   const cls = classifyComments(an.texts, kws);
   const panel = $(`dpanel-${vid}`);
   if (!panel) return;
+  // 재렌더(언어 전환·키워드 추가/삭제) 시에도 열려 있던 샘플 목록·입력값 보존
+  const openIds = new Set([...panel.querySelectorAll("details.csamples[open]")].map(d => d.id));
+  const prevKwVal = panel.querySelector(`#ckw-${vid}`)?.value || "";
   panel.innerHTML = detailPanelHtml(vid, v, an, cls, kws);
+  openIds.forEach(id => { const d = $(id); if (d) d.open = true; });
+  const kwInput = $(`ckw-${vid}`);
+  if (kwInput && prevKwVal) kwInput.value = prevKwVal;
   $(`ckwAdd-${vid}`).onclick = () => {
     const k = ($(`ckw-${vid}`).value || "").trim();
     if (!k) return;
@@ -549,33 +756,33 @@ function wireDetailButtons() {
 
 async function toggleDetail(vid, btn) {
   const row = btn.closest("tr");
-  if (OPEN_VID === vid) { row.nextElementSibling?.remove(); OPEN_VID = null; btn.textContent = "자세히"; return; }
+  if (OPEN_VID === vid) { row.nextElementSibling?.remove(); OPEN_VID = null; btn.textContent = t("btn.detail"); return; }
   if (OPEN_VID) { // 단일 아코디언: 기존 전개 자동 접기
     const prev = document.querySelector(`.detailbtn[data-vid="${OPEN_VID}"]`);
-    if (prev) { prev.textContent = "자세히"; prev.closest("tr")?.nextElementSibling?.remove(); }
+    if (prev) { prev.textContent = t("btn.detail"); prev.closest("tr")?.nextElementSibling?.remove(); }
   }
-  OPEN_VID = vid; btn.textContent = "접기";
+  OPEN_VID = vid; btn.textContent = t("btn.collapse");
   const tr = document.createElement("tr");
   tr.className = "detailrow";
-  tr.innerHTML = `<td colspan="7"><div class="dpanel" id="dpanel-${vid}"><span class="dnote">댓글 수집 중 …</span></div></td>`;
+  tr.innerHTML = `<td colspan="7"><div class="dpanel" id="dpanel-${vid}"><span class="dnote">${t("d.loading")}</span></div></td>`;
   row.parentElement.insertBefore(tr, row.nextSibling);
   try {
     if (!COMMENT_CACHE.has(vid)) {
       const { total, texts } = await fetchComments(vid);
       COMMENT_CACHE.set(vid, { total, texts });
-      log(`  댓글 수집: ${vid} → 샘플 ${texts.length}개 (전체 ${total ?? "?"}개 중, 좋아요순)`);
+      log(t("log.comments", { id: vid, n: texts.length, t: total ?? "?" }));
     }
     renderPanel(vid);
   } catch (e) {
     const p = $(`dpanel-${vid}`);
-    if (p) p.innerHTML = `<span class="err">댓글 로드 실패: ${escapeHtml(e.message)}</span>`;
+    if (p) p.innerHTML = `<span class="err">${t("d.fail", { m: escapeHtml(e.message) })}</span>`;
   }
 }
 
 // ── 액션 ────────────────────────────────────────────────
 function requireInputs() {
-  if (!getKey()) { log("API 키를 먼저 입력하세요.", true); $("key").focus(); return false; }
-  if (!$("channel").value.trim()) { log("채널 주소를 입력하세요.", true); $("channel").focus(); return false; }
+  if (!getKey()) { log(t("log.needkey"), true); $("key").focus(); return false; }
+  if (!$("channel").value.trim()) { log(t("log.needchannel"), true); $("channel").focus(); return false; }
   return true;
 }
 function setBusy(busy) { ["btnConvert","btnAnalyze"].forEach(id => $(id).disabled = busy); }
@@ -584,11 +791,11 @@ async function doConvert() {
   if (!requireInputs()) return;
   clearLog(); setBusy(true); $("convertOut").innerHTML = "";
   try {
-    log("채널 resolving …");
+    log(t("log.resolving"));
     const ch = await resolveChannel($("channel").value);
     renderConvert(ch, $("channel").value);
-    log(`완료: ${ch.title} → UC=${ch.id} / UU=${ch.uploads}`);
-  } catch (e) { log("오류: " + e.message, true); }
+    log(t("log.convertok", { title: ch.title, id: ch.id, uu: ch.uploads }));
+  } catch (e) { log(t("log.err", { m: e.message }), true); }
   finally { setBusy(false); }
 }
 
@@ -597,21 +804,21 @@ async function doAnalyze() {
   clearLog(); setBusy(true); $("analyzeOut").innerHTML = ""; $("btnCsv").disabled = true; LAST_ROWS = null;
   const mode = $("mode").value;
   try {
-    log("채널 resolving …");
+    log(t("log.resolving"));
     const ch = await resolveChannel($("channel").value);
-    log(`${ch.title} (${ch.id}) · 업로드PL ${ch.uploads}`);
-    log("영상 수집 중 (최신순) …");
+    log(t("log.channelinfo", { title: ch.title, id: ch.id, uu: ch.uploads }));
+    log(t("log.collecting"));
     const vids = (await collectVideos(ch.uploads, mode)).filter(v => !v.isShort); // 롱폼만
     const windows = [];
-    if (mode === "10" || mode === "both") windows.push({ label: `최근 ${RECENT_N}개 롱폼`, videos: vids.slice(0, RECENT_N) });
+    if (mode === "10" || mode === "both") windows.push({ labelKey: "win.10", labelParams: { n: RECENT_N }, videos: vids.slice(0, RECENT_N) });
     if (mode === "3m" || mode === "both") {
       const cutoff = new Date(Date.now() - RECENT_DAYS*86400000);
-      windows.push({ label: `최근 ${RECENT_DAYS}일(3개월) 롱폼`, videos: vids.filter(v => new Date(v.publishedAt) >= cutoff) });
+      windows.push({ labelKey: "win.3m", labelParams: { d: RECENT_DAYS }, videos: vids.filter(v => new Date(v.publishedAt) >= cutoff) });
     }
     windows.forEach(w => w.stats = summarize(w.videos));
     renderWindows(ch, windows);
-    log("분석 완료.");
-  } catch (e) { log("오류: " + e.message, true); }
+    log(t("log.done"));
+  } catch (e) { log(t("log.err", { m: e.message }), true); }
   finally { setBusy(false); }
 }
 
@@ -622,7 +829,8 @@ function loadKey() {
   $("key").addEventListener("change", saveKey);
   $("remember").addEventListener("change", saveKey);
   fetch("/config").then(r=>r.json()).then(c => {
-    $("keyStatus").textContent = c.hasEnvKey ? "· 서버 환경변수에도 키 있음(화면 비워도 됨)" : "";
+    SAVED_CONFIG = c;
+    $("keyStatus").textContent = c.hasEnvKey ? t("key.envnote") : "";
   }).catch(()=>{});
 }
 
@@ -632,11 +840,10 @@ async function checkUpdate() {
     const r = await fetch("/version");
     if (!r.ok) return;
     const v = await r.json();
-    if (v.local) $("buildTag").textContent = `· 로컬 빌드 ${v.local}`;
+    LAST_VER = v;
+    if (v.local) $("buildTag").textContent = t("footer.build", { v: v.local });
     if (!v.behind) return;
-    $("updateMsg").innerHTML =
-      `새 버전이 원격에 있습니다 (<code>${v.local}</code> → <code>${v.remote}</code>). ` +
-      `클론한 폴더의 터미널에서 <code>git pull</code> 후 이 화면을 새로고침하세요.`;
+    $("updateMsg").innerHTML = t("update.msg", { local: v.local, remote: v.remote });
     $("updatebar").hidden = false;
     $("updateClose").onclick = () => { $("updatebar").hidden = true; };
   } catch {} // 구버전 서버(/version 없음)·오프라인이면 조용히 스킵
@@ -646,6 +853,12 @@ $("btnConvert").onclick = doConvert;
 $("btnAnalyze").onclick = doAnalyze;
 $("btnCsv").onclick = downloadCsv;
 $("channel").addEventListener("keydown", e => { if (e.key === "Enter") doAnalyze(); });
+$("langSel").onchange = (e) => {
+  LANG = e.target.value;
+  try { localStorage.setItem("yt_lang", LANG); } catch {}
+  applyLang(); // 정적 UI + 렌더된 결과 전체를 새 언어로 재렌더 (API 호출 없음)
+};
+applyLang(); // 초기 언어 적용 (저장값/브라우저 언어 기준)
 loadKey();
 checkUpdate();
 </script>
